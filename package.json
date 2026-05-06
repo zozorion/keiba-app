@@ -1,0 +1,32 @@
+{
+  "name": "keiba-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cheerio": "^1.2.0",
+    "csv-parse": "^6.2.1",
+    "iconv-lite": "^0.7.2",
+    "next": "16.2.4",
+    "node-cron": "^4.2.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "sharp": "^0.34.5",
+    "twitter-api-v2": "^1.29.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "typescript": "^5"
+  }
+}

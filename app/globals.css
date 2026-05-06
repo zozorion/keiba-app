@@ -1,0 +1,911 @@
+/* ============================================================
+   競馬予想ダッシュボード — Design System
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* Color Palette — Dark Mode */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: #1a2035;
+  --bg-card-hover: #1e2642;
+  --bg-surface: #141a2e;
+  --bg-input: #1e293b;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-accent: #fbbf24;
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.1);
+
+  /* Accent Colors */
+  --gold: #fbbf24;
+  --gold-dim: rgba(251, 191, 36, 0.15);
+  --gold-glow: rgba(251, 191, 36, 0.3);
+  --fire: #ef4444;
+  --fire-dim: rgba(239, 68, 68, 0.15);
+  --fire-glow: rgba(239, 68, 68, 0.3);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59, 130, 246, 0.15);
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.15);
+  --purple: #a855f7;
+  --purple-dim: rgba(168, 85, 247, 0.15);
+  --cyan: #06b6d4;
+  --cyan-dim: rgba(6, 182, 212, 0.15);
+
+  /* Waku (Frame) Colors */
+  --waku-1: #f8f8f8;
+  --waku-2: #1a1a1a;
+  --waku-3: #dc2626;
+  --waku-4: #2563eb;
+  --waku-5: #fbbf24;
+  --waku-6: #16a34a;
+  --waku-7: #f97316;
+  --waku-8: #ec4899;
+
+  /* Typography */
+  --font-sans: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow-gold: 0 0 20px rgba(251, 191, 36, 0.15);
+  --shadow-glow-fire: 0 0 20px rgba(239, 68, 68, 0.15);
+}
+
+/* ============================================================
+   Global Reset & Base
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+.app-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-xl);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.header-brand h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.header-brand .subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.header-date {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ============================================================
+   Date Navigation
+   ============================================================ */
+.date-nav {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.date-btn {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.date-btn.active {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.1));
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: var(--shadow-glow-gold);
+}
+
+/* ============================================================
+   Venue Grid
+   ============================================================ */
+.venues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: var(--space-lg);
+}
+
+.venue-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.venue-card:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+.venue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-card));
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.venue-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.venue-meta {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.venue-weather {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+}
+
+.venue-condition {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.condition-good { background: var(--green-dim); color: var(--green); }
+.condition-wet { background: var(--blue-dim); color: var(--blue); }
+
+/* ============================================================
+   Race List
+   ============================================================ */
+.race-list {
+  list-style: none;
+}
+
+.race-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.race-item:last-child {
+  border-bottom: none;
+}
+
+.race-item:hover {
+  background: var(--bg-card-hover);
+}
+
+.race-number {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.race-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.race-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.race-name.graded {
+  color: var(--gold);
+}
+
+.race-condition {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.race-pivot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.pivot-horse {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pivot-score-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.pivot-score {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.score-fire { background: var(--fire-dim); color: var(--fire); }
+.score-high { background: var(--gold-dim); color: var(--gold); }
+.score-mid { background: var(--blue-dim); color: var(--blue); }
+.score-low { background: var(--bg-input); color: var(--text-muted); }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  color: #000;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow-gold);
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.btn-danger {
+  background: var(--fire-dim);
+  color: var(--fire);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ============================================================
+   Race Detail Page
+   ============================================================ */
+.race-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-xl);
+}
+
+.race-detail-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.race-detail-meta {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+}
+
+.meta-badge.grade {
+  background: var(--gold-dim);
+  color: var(--gold);
+}
+
+/* Check Card */
+.check-card {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.05), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.check-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: var(--space-md);
+}
+
+.check-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.check-card li {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding-left: var(--space-lg);
+  position: relative;
+}
+
+.check-card li::before {
+  content: '✅';
+  position: absolute;
+  left: 0;
+}
+
+/* Pivot Horse Card */
+.pivot-card {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.04));
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.pivot-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), #f59e0b, var(--gold));
+}
+
+.pivot-card .label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  margin-bottom: var(--space-sm);
+}
+
+.pivot-card .horse-name {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-bottom: var(--space-sm);
+}
+
+.pivot-card .horse-details {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.pivot-card .score-display {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.pivot-card .score-number {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.pivot-card .score-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.pivot-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.reason-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+}
+
+.reason-tag.positive {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.reason-tag.negative {
+  background: var(--fire-dim);
+  color: var(--fire);
+}
+
+/* Horse Table */
+.horse-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-xl);
+}
+
+.horse-table thead {
+  background: var(--bg-surface);
+}
+
+.horse-table th {
+  padding: var(--space-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border-medium);
+}
+
+.horse-table td {
+  padding: var(--space-md);
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.horse-table tr:hover td {
+  background: var(--bg-card-hover);
+}
+
+.horse-table tr:last-child td {
+  border-bottom: none;
+}
+
+.waku-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.waku-1 { background: var(--waku-1); color: #333; }
+.waku-2 { background: var(--waku-2); }
+.waku-3 { background: var(--waku-3); }
+.waku-4 { background: var(--waku-4); }
+.waku-5 { background: var(--waku-5); color: #333; }
+.waku-6 { background: var(--waku-6); }
+.waku-7 { background: var(--waku-7); }
+.waku-8 { background: var(--waku-8); }
+
+/* Bet Recommendations */
+.bet-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.bet-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.bet-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+
+.bet-type {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  min-width: 80px;
+  text-align: center;
+}
+
+.bet-type.wide { background: var(--blue-dim); color: var(--blue); }
+.bet-type.umaren { background: var(--green-dim); color: var(--green); }
+.bet-type.sanrenpuku { background: var(--purple-dim); color: var(--purple); }
+.bet-type.tansho { background: var(--gold-dim); color: var(--gold); }
+
+.bet-combo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bet-reason {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* ============================================================
+   Settings Page
+   ============================================================ */
+.settings-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+}
+
+.settings-section h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.template-editor {
+  width: 100%;
+  min-height: 200px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.template-editor:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+}
+
+.template-vars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+
+.template-var {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--cyan);
+  cursor: pointer;
+}
+
+/* ============================================================
+   Loading & Empty States
+   ============================================================ */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--space-lg);
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border-medium);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--text-muted);
+}
+
+.empty-state h3 {
+  font-size: 1.2rem;
+  margin-bottom: var(--space-md);
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   Status Badge
+   ============================================================ */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-ready::before { background: var(--green); }
+.status-ready { background: var(--green-dim); color: var(--green); }
+
+.status-pending::before { background: var(--gold); }
+.status-pending { background: var(--gold-dim); color: var(--gold); }
+
+.status-posted::before { background: var(--blue); }
+.status-posted { background: var(--blue-dim); color: var(--blue); }
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+.nav-links {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.nav-link {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.nav-link.active {
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 768px) {
+  .app-container {
+    padding: var(--space-sm);
+  }
+
+  .venues-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: flex-start;
+    padding: var(--space-md) 0;
+  }
+
+  .header-brand h1 {
+    font-size: 1.1rem;
+  }
+
+  .header-brand .subtitle {
+    display: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: var(--space-xs);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
+    padding-bottom: var(--space-xs);
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+
+  .nav-link {
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
+
+  .race-item {
+    grid-template-columns: 32px 1fr auto;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .date-nav {
+    flex-wrap: wrap;
+  }
+
+  .pivot-card .score-number {
+    font-size: 2rem;
+  }
+
+  .horse-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* ============================================================
+   Animations
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.venue-card { animation: fadeIn 0.5s ease forwards; }
+.venue-card:nth-child(2) { animation-delay: 0.1s; }
+.venue-card:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.fire-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}

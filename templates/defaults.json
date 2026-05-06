@@ -1,0 +1,22 @@
+{
+  "xNormal": {
+    "name": "X通常レース用",
+    "template": "【{venue} {raceNumber}R {raceName}】\n{surface}{distance}m {condition} | 発走 {postTime}\n\n🎯 軸馬: {pivotNum}番 {pivotName}\n📊 期待値: {expectationScore}/100\n\n{shortComment}\n\n推奨買い目:\n🔵 ワイド {wideCombo}\n🟢 馬連 {umarenCombo}\n\n#競馬予想 #中央競馬 #{venue}",
+    "description": "全レース投稿用の基本テンプレート"
+  },
+  "xGraded": {
+    "name": "X重賞用",
+    "template": "【{raceName} {grade} 最終結論】🏆\n{surface}{distance}m {condition} | {dateText}\n\n自信度: {confidenceRank}\n\n◎ {pivotNum} {pivotName}\n{pivotReasons}\n\n◯ {secondNum} {secondName}\n▲ {thirdNum} {thirdName}\n\n💡 推奨馬券\n{betDetails}\n\nこの予想に乗る人は「いいね」で教えてください！\n\n#競馬予想 #{raceName} #{grade} #データ分析",
+    "description": "重賞レース用の詳細テンプレート"
+  },
+  "xHighConfidence": {
+    "name": "X高期待値レース用",
+    "template": "【{venue} {raceNumber}R 期待値大🔥】\n{surface}{distance}m {condition}\n\n⚡ 穴馬注目: {pivotNum}番 {pivotName}\n📊 期待値: {expectationScore}/100（{popularity}番人気）\n\n注目理由:\n{pivotReasons}\n\n推奨: ワイド {wideCombo}\n\n激走を期待する人はリポストで広めてください！\n\n#競馬予想 #穴馬 #中央競馬",
+    "description": "人気と実力の乖離が大きいレース用"
+  },
+  "noteAnalysis": {
+    "name": "note深掘り記事用",
+    "template": "# {raceName} {grade} 徹底データ分析\n\n## レース概要\n{surface}{distance}m（{condition}）{venue}競馬場\n{raceIntro}\n\n## コースデータ（過去10年）\n{checkCardDetails}\n\n## 全頭診断\n{allHorseAnalysis}\n\n## 馬券作戦\n{betStrategy}\n\n## まとめ\n{summary}\n\n---\n*データ出典: JRA公式レース結果（2016-2026）を独自集計*",
+    "description": "noteの深掘り考察記事テンプレート"
+  }
+}
