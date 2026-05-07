@@ -1,248 +1,30 @@
 /**
  * 投稿生成・管理API
- * GET  /api/posts              — テンプレート一覧 + データ状況
- * POST /api/posts              — 投稿文を生成（+ X投稿オプション）
- * PUT  /api/posts              — テンプレート保存
+ * GET  /api/posts              — 投稿種別一覧 + データ状況
+ * POST /api/posts              — 投稿文を生成（X系はGemini動的生成、note系は既存テンプレ）
+ * PUT  /api/posts              — 投稿種別の prompt/requiredFacts または noteテンプレを保存
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { postTweet, postThread, isTwitterConfigured } from '../../../lib/twitter';
+import { postTweet, isTwitterConfigured } from '../../../lib/twitter';
 import { loadPostConfig, applyRules } from '../post-config/route';
+import { POST_TYPES, PostType } from '../../../lib/post-types';
+import { generatePost } from '../../../lib/post-generator';
+import { isGeminiConfigured } from '../../../lib/gemini';
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'data', 'templates');
 const POSTS_LOG = path.join(process.cwd(), 'data', 'posts-log.json');
 
-// テンプレートディレクトリ作成
 if (!fs.existsSync(TEMPLATES_DIR)) fs.mkdirSync(TEMPLATES_DIR, { recursive: true });
 
-/** デフォルトテンプレート定義 */
-const DEFAULT_TEMPLATES: Record<string, { label: string; category: string; template: string }> = {
-  'x-preview': {
-    label: '🐦① 前日予告', category: 'x',
-    template: `仕事終わり。缶チューハイ片手にAI回してる🍺
-
-明日{venues}。{venue_count}場あるけど全部スキャン済み。
-
-🔥 期待値高いやつ
-{top3_races}
-
-平日はゴリゴリコード書いて、週末は自分で作ったAIで馬券買う生活、なかなか悪くない。
-
-結局酒とギャンブルに消えてくんだけど。
-
-#競馬予想 #JRA #データ競馬`,
-  },
-  'x-morning': {
-    label: '🐦② 朝イチ注目', category: 'x',
-    template: `おはよ。昨日飲みすぎたけど馬券の時間だけは起きれる🍻
-
-{date_label} {venues}
-
-今日のAIイチ推し👇
-
-⭐ BEST BET
-{best_race}R {best_raceName}
-◎ {best_num}番 {best_name}
-
-種牡馬、枠、騎手、全部噛み合ってる。こういうレースだけ狙う。
-
-他にも{high_conf_count}レースで期待値出てる。今日は忙しい。
-
-#今日の競馬 #競馬予想`,
-  },
-  'x-race': {
-    label: '🐦③ 個別レース予想', category: 'x',
-    template: `{venue}{raceNumber}R {raceName}
-{surface}{distance}m
-
-データ掘ったら面白いの出てきた。
-
-◎ {pivot_num}番 {pivot_name}
-{pivot_reasons}
-
-数字は嘘つかない。
-
-🎯 ワイド流し
-{pivot_num}→{wide_targets}（{wide_count}点）
-
-期待値プラスの時だけ勝負する。これだけ守ればトータルで勝てる。
-
-#競馬予想 #{venue}競馬`,
-  },
-  'x-graded': {
-    label: '🐦④ 重賞予想', category: 'x',
-    template: `🏆 {raceName}（{grade}）
-
-昨日の夜からずっとデータ回してた。3時間くらい。
-酒飲みながらだけど。
-
-{venue} {surface}{distance}m
-
-◎ {pivot_num}番 {pivot_name}
-└ {pivot_sire}産駒
-{pivot_reasons}
-
-○ {second_num}番 {second_name}
-▲ {third_num}番 {third_name}
-
-🎯 ワイド: {pivot_num}→{wide_targets}
-
-人気と実力のズレ、見つけた時が一番アガる。
-
-#競馬予想 #{raceName}`,
-  },
-  'x-result': {
-    label: '🐦⑤ 的中速報', category: 'x',
-    template: `{hit_emoji} {venue}{raceNumber}R {raceName}
-
-◎ {pivot_name} → {finish}着
-{hit_detail}
-
-今夜はいい酒飲める🍺
-
-会社の飲み会より、一人で競馬当てた後のハイボールの方が100倍うまい。
-
-#競馬予想 #的中`,
-  },
-  'x-daily': {
-    label: '🐦⑥ 日次まとめ', category: 'x',
-    template: `今日の結果、全部出す。盛らない。
-
-{date_label} {venues}
-
-🎯 軸馬3着内: {pivot_hits}/{total}（{pivot_rate}%）
-💰 ワイドROI: {wide_roi}%
-{venue_breakdown}
-
-良い日も悪い日も晒す。
-勝った時だけ報告するアカウントとか信用できないでしょ。
-
-今日のデータも全部AIにフィードバックした。来週また進化する。
-
-風呂入ってビール飲んで寝る。おつかれ。
-
-#競馬予想 #回収率`,
-  },
-  'x-weekly': {
-    label: '🐦⑦ 週間レポート', category: 'x',
-    template: `今週の成績。
-
-🏇 {total_races}R分析
-🎯 軸馬3着内率: {pivot_rate}%
-💰 ワイドROI: {wide_roi}%
-
-毎週AIに学習させてて、実際ちょっとずつ精度上がってきてる。
-最初は完全に趣味で始めたけど、ここまで来ると意地でも回収率プラスにしたい。
-
-月〜金はIT企業でコード書いて、
-金曜の夜にAI回して、
-土日は馬券。
-月曜の朝、学習データ投入。
-
-この生活ループ、たぶん一生続く。
-
-#競馬予想 #AI予想`,
-  },
-  'x-value': {
-    label: '🐦⑧ 穴馬ピック', category: 'x',
-    template: `{venue}{raceNumber}R {raceName}
-
-これ多分みんなスルーしてるけど。
-
-{horse_num}番 {horse_name}
-└ {horse_odds}倍
-└ {horse_sire}産駒
-└ {horse_reason}
-
-{horse_odds}倍ってことは市場が「来ない」って判断してる。
-でもAIは「走る」って言ってる。
-
-この乖離が期待値。こういうのをコツコツ拾っていく。
-
-#穴馬 #競馬予想`,
-  },
-  'x-course': {
-    label: '🐦⑨ コース徹底解説', category: 'x',
-    template: `{venue}{surface}{distance}m、データまとめたから置いとく。
-
-{course_tips}
-
-有力種牡馬: {top_sires}
-枠順: {frame_summary}
-脚質: {style_summary}
-
-「なんとなく内枠有利っぽい」とか言ってる人、ちゃんとデータ見た方がいい。
-感覚と実際の数字、結構ズレてるから。
-
-使えそうなら使って。
-
-#競馬データ #{venue}競馬`,
-  },
-  'x-bias': {
-    label: '🐦⑩ 馬場傾向速報', category: 'x',
-    template: `{date_label} {venue}の馬場、まとめとく。
-
-{bias_summary}
-
-前日の馬場データ、意外とみんな見てない。
-でもこれ見るか見ないかで馬券の精度マジで変わる。
-
-明日の{venue}、この傾向頭に入れといて損はない。
-
-#馬場傾向 #{venue}競馬`,
-  },
-  'x-lifestyle-1': {
-    label: '🐦⑪ 日常（仕事帰り）', category: 'x',
-    template: `残業終わり。22時。
-
-帰りにストロング買って、電車でAIの学習データ眺めてる。
-周りはスマホでSNS見てるけど、私は種牡馬の成績データ見てる。
-
-なにやってんだろって思うけど、
-先週これで3万浮いてるからやめられない。
-
-結局ただの酒飲みギャンブル好きが、たまたまコード書けたってだけ。
-
-#日常 #競馬好きと繋がりたい`,
-  },
-  'x-lifestyle-2': {
-    label: '🐦⑫ 日常（週末の朝）', category: 'x',
-    template: `土曜の朝。
-
-平日は7時に起きるの無理なのに、
-競馬の日だけ6時半に目が覚める。不思議。
-
-コーヒー淹れて、AIの出力チェックして、
-気になるレースにマーカー引いて。
-
-この時間が一番好きかもしれない。
-誰にも邪魔されない、データと向き合う時間。
-
-今日も期待値で殴る。
-
-#競馬のある生活`,
-  },
-  'x-lifestyle-3': {
-    label: '🐦⑬ 日常（飲み）', category: 'x',
-    template: `金曜の夜。
-
-会社の飲み会断って一人で赤提灯に来てる。
-ホッピーとモツ煮で、明日の出走表とにらめっこ。
-
-同期は合コン行ってるらしい。
-私はAIに教師データ食わせてる。
-
-どっちが将来的にリターン高いかって話よ。
-
-明日の{venues}、なかなかいいの見つけた。
-詳しくは明日の朝。
-
-#金曜の夜 #競馬予想`,
-  },
+/* -------------------------------------------------------------------------- */
+/*                  note系（長文・構造的）は引き続きテンプレ運用              */
+/* -------------------------------------------------------------------------- */
+const NOTE_TEMPLATES: Record<string, { id: string; label: string; category: 'note'; template: string }> = {
   'note-analysis': {
-    label: '📝 全頭診断', category: 'note',
+    id: 'note-analysis', label: '📝 全頭診断', category: 'note',
     template: `# 🏇 {raceName}（{grade}）全頭診断 & 買うべき馬ランキング
 
 > **{venue} {surface}{distance}m（{condition}）**
@@ -262,7 +44,7 @@ const DEFAULT_TEMPLATES: Record<string, { label: string; category: string; templ
 {recommendations}`,
   },
   'note-weekly': {
-    label: '📝 週間レポート', category: 'note',
+    id: 'note-weekly', label: '📝 週間レポート', category: 'note',
     template: `# 📊 週間レポート {date_range}
 
 ## 成績サマリー
@@ -277,7 +59,7 @@ const DEFAULT_TEMPLATES: Record<string, { label: string; category: string; templ
 {learning_insights}`,
   },
   'note-course': {
-    label: '📝 コース攻略ガイド', category: 'note',
+    id: 'note-course', label: '📝 コース攻略ガイド', category: 'note',
     template: `# 📚 {venue}{surface}{distance}m 完全攻略ガイド
 
 ## コース概要
@@ -300,17 +82,51 @@ const DEFAULT_TEMPLATES: Record<string, { label: string; category: string; templ
   },
 };
 
-/** テンプレート取得（カスタム優先） */
-function getTemplate(id: string): { label: string; category: string; template: string } | null {
+/* -------------------------------------------------------------------------- */
+/*                            投稿種別の取得（カスタム優先）                  */
+/* -------------------------------------------------------------------------- */
+function getXPostType(id: string): PostType | null {
+  // カスタム保存があればそれを使う
   const customPath = path.join(TEMPLATES_DIR, `${id}.json`);
   if (fs.existsSync(customPath)) {
-    return JSON.parse(fs.readFileSync(customPath, 'utf-8'));
+    try {
+      const c = JSON.parse(fs.readFileSync(customPath, 'utf-8'));
+      // 旧形式（template フィールドあり）の場合も最低限読み出せるように
+      const base = POST_TYPES[id];
+      if (!base) return null;
+      return {
+        ...base,
+        prompt: c.prompt || base.prompt,
+        requiredFacts: c.requiredFacts || base.requiredFacts,
+        lengthHint: c.lengthHint || base.lengthHint,
+        hashtagHint: c.hashtagHint || base.hashtagHint,
+      };
+    } catch {
+      /* 破損していたら無視してデフォルト */
+    }
   }
-  return DEFAULT_TEMPLATES[id] || null;
+  return POST_TYPES[id] || null;
 }
 
-/** 予測データから変数を生成 */
-function buildVariables(date: string, predictions: any[], results: any[] | null, raceIndex?: number): Record<string, string> {
+function getNoteTemplate(id: string): { id: string; label: string; category: 'note'; template: string } | null {
+  const customPath = path.join(TEMPLATES_DIR, `${id}.json`);
+  if (fs.existsSync(customPath)) {
+    try {
+      const c = JSON.parse(fs.readFileSync(customPath, 'utf-8'));
+      const base = NOTE_TEMPLATES[id];
+      if (!base) return null;
+      return { ...base, template: c.template || base.template };
+    } catch {
+      /* */
+    }
+  }
+  return NOTE_TEMPLATES[id] || null;
+}
+
+/* -------------------------------------------------------------------------- */
+/*       予測データから事実データ（facts）を抽出（旧 buildVariables 相当）    */
+/* -------------------------------------------------------------------------- */
+function buildFacts(date: string, predictions: any[], results: any[] | null, raceIndex?: number): Record<string, string> {
   const vars: Record<string, string> = {};
   const d = new Date(date + 'T00:00:00');
   const weekday = ['日','月','火','水','木','金','土'][d.getDay()];
@@ -358,7 +174,7 @@ function buildVariables(date: string, predictions: any[], results: any[] | null,
     vars.pivot_sire = race.pivotHorse?.sire || '不明';
     vars.pivot_reasons = (race.pivotHorse?.reasons || [])
       .filter((r: any) => r.points > 0).slice(0, 3)
-      .map((r: any) => `└ ${r.label} (+${r.points}pt)`).join('\n');
+      .map((r: any) => r.label).join(' / ');
 
     // ワイド
     const wideRec = race.recommendations?.find((r: any) => r.type === 'wide');
@@ -373,7 +189,7 @@ function buildVariables(date: string, predictions: any[], results: any[] | null,
     if (allSorted[1]) { vars.second_num = String(allSorted[1].num); vars.second_name = allSorted[1].name; vars.second_score = String(allSorted[1].score); }
     if (allSorted[2]) { vars.third_num = String(allSorted[2].num); vars.third_name = allSorted[2].name; vars.third_score = String(allSorted[2].score); }
 
-    // 穴馬（オッズ10倍以上でスコア高い馬）
+    // 穴馬
     const valueHorse = allSorted.find((h: any) => h.odds >= 10 && h.score >= 55);
     if (valueHorse) {
       vars.horse_num = String(valueHorse.num);
@@ -386,7 +202,7 @@ function buildVariables(date: string, predictions: any[], results: any[] | null,
 
     // コース情報（チェックカード）
     if (race.checkCard) {
-      vars.course_tips = race.checkCard.tips?.join('\n') || '';
+      vars.course_tips = race.checkCard.tips?.join(' / ') || '';
       vars.frame_summary = race.checkCard.frameSummary || '';
       vars.style_summary = race.checkCard.styleSummary || '';
       vars.top_sires = race.checkCard.sireSummary || '';
@@ -405,7 +221,7 @@ function buildVariables(date: string, predictions: any[], results: any[] | null,
     vars.recommendations = (race.recommendations || []).map((r: any) => `- **${r.label}**: ${r.reason}`).join('\n');
   }
 
-  // 結果用変数
+  // 結果用
   if (results && results.length > 0) {
     const totalR = results.length;
     const pivotHits = results.filter((r: any) => r.pivot?.inTop3).length;
@@ -413,12 +229,10 @@ function buildVariables(date: string, predictions: any[], results: any[] | null,
     vars.pivot_hits = String(pivotHits);
     vars.pivot_rate = String(Math.round(pivotHits / totalR * 100));
 
-    // ワイドROI計算
     const wideReturn = results.reduce((s: number, r: any) => s + (r.bets?.wide?.return || 0), 0);
     const wideCost = totalR * 500;
     vars.wide_roi = String(Math.round(wideReturn / wideCost * 100));
 
-    // 会場別
     const venueMap = new Map<string, { hits: number; total: number }>();
     results.forEach((r: any) => {
       if (!venueMap.has(r.venue)) venueMap.set(r.venue, { hits: 0, total: 0 });
@@ -428,44 +242,51 @@ function buildVariables(date: string, predictions: any[], results: any[] | null,
     });
     vars.venue_breakdown = [...venueMap.entries()].map(([v, s]) =>
       `${v}: ${s.hits}/${s.total}的中`
-    ).join('\n');
+    ).join(' / ');
 
-    // 個別結果
     if (effectiveIndex !== undefined && results[effectiveIndex]) {
       const rr = results[effectiveIndex];
       vars.finish = String(rr.pivot?.finish || '?');
       vars.hit_emoji = rr.pivot?.inTop3 ? '🎯' : '😢';
       const wideHit = rr.bets?.wide?.hit;
-      vars.hit_detail = wideHit ? `💰 ワイド的中！ ${rr.bets.wide.return}円回収` : 'ワイド不的中';
+      vars.hit_detail = wideHit ? `ワイド的中、${rr.bets.wide.return}円回収` : 'ワイド不的中';
     }
-  }
 
-  // 馬場傾向（土曜→日曜用）
-  if (results && results.length > 0) {
+    // 馬場傾向
     const innerWins = results.filter((r: any) => r.pivot?.finish <= 3 && r.pivot?.num <= 6).length;
     const outerWins = results.filter((r: any) => r.pivot?.finish <= 3 && r.pivot?.num > 6).length;
-    vars.bias_summary = `内枠好走: ${innerWins}回 / 外枠好走: ${outerWins}回\n` +
-      (innerWins > outerWins ? '→ 内枠有利の傾向あり🔥' : '→ 外枠でも十分勝負できる展開');
+    vars.bias_summary = `内枠好走 ${innerWins}回 / 外枠好走 ${outerWins}回。` +
+      (innerWins > outerWins ? '内枠やや有利の傾向。' : innerWins < outerWins ? '外枠でも勝負できる馬場。' : '内外フラット。');
+
+    // 週間レポート用（同名キーが個別レース系と被らないよう、無いときだけ）
+    if (!vars.total_races) vars.total_races = String(totalR);
   }
 
   return vars;
 }
 
-/** テンプレートに変数を注入 */
-function renderTemplate(template: string, vars: Record<string, string>): string {
+/** note 用：テンプレに変数を注入 */
+function renderNoteTemplate(template: string, vars: Record<string, string>): string {
   let result = template;
   for (const [key, value] of Object.entries(vars)) {
     result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value || '');
   }
-  // 未置換の変数をクリーンアップ
   result = result.replace(/\{[a-z_]+\}/g, '');
   return result.trim();
 }
 
-/** 投稿テキストを生成（外部から呼べるexport版） */
-export function generatePostText(templateId: string, date: string, raceIndex?: number): string {
-  const tmpl = getTemplate(templateId);
-  if (!tmpl) return '';
+/* -------------------------------------------------------------------------- */
+/*                     公開関数：投稿テキストを生成（async）                  */
+/* -------------------------------------------------------------------------- */
+export async function generatePostText(
+  templateId: string,
+  date: string,
+  raceIndex?: number,
+  scheduledAt?: string,
+): Promise<string> {
+  const isXType = !!POST_TYPES[templateId];
+  const isNoteType = !!NOTE_TEMPLATES[templateId];
+  if (!isXType && !isNoteType) return '';
 
   const predPath = path.join(process.cwd(), 'data', 'weekly', date, 'predictions.json');
   let predictions: any[] = [];
@@ -490,100 +311,123 @@ export function generatePostText(templateId: string, date: string, raceIndex?: n
     }).filter(Boolean);
   }
 
-  const postConfig = loadPostConfig();
-  const vars = buildVariables(date, predictions, results, raceIndex);
-  vars.persona_name = postConfig.persona.name || '';
-  vars.persona_signoff = postConfig.persona.signoff || '';
-  vars.persona_fav = postConfig.persona.favHorse || '';
-  const rawText = renderTemplate(tmpl.template, vars);
-  return applyRules(rawText, postConfig);
+  const config = loadPostConfig();
+  const facts = buildFacts(date, predictions, results, raceIndex);
+
+  if (isXType) {
+    const postType = getXPostType(templateId)!;
+    const out = await generatePost({ postType, facts, config, scheduledAt });
+    if (out.text) return applyRules(out.text, config);
+    // Geminiが使えない/失敗時：エラーメッセージを返す（ユーザーが気づけるように）
+    return out.error ? `[生成失敗] ${out.error}` : '';
+  }
+
+  // note 系：従来どおりテンプレ + 変数置換
+  const tmpl = getNoteTemplate(templateId)!;
+  facts.persona_name = config.persona.name || '';
+  facts.persona_signoff = config.persona.signoff || '';
+  facts.persona_fav = config.persona.favHorse || '';
+  const raw = renderNoteTemplate(tmpl.template, facts);
+  return applyRules(raw, config);
 }
 
+/* -------------------------------------------------------------------------- */
+/*                               HTTP ハンドラ                                */
+/* -------------------------------------------------------------------------- */
 
 export async function GET() {
-  // テンプレート一覧
-  const templates = Object.entries(DEFAULT_TEMPLATES).map(([id, t]) => {
-    const custom = getTemplate(id);
-    return { id, ...t, template: custom?.template || t.template, isCustom: custom !== null && custom !== DEFAULT_TEMPLATES[id] };
+  // X系（POST_TYPES）+ note系を返す
+  const xTypes = Object.values(POST_TYPES).map(t => {
+    const custom = getXPostType(t.id);
+    return {
+      id: t.id,
+      label: t.label,
+      category: t.category,
+      prompt: custom?.prompt || t.prompt,
+      requiredFacts: custom?.requiredFacts || t.requiredFacts,
+      lengthHint: custom?.lengthHint || t.lengthHint,
+      hashtagHint: custom?.hashtagHint || t.hashtagHint,
+      isCustom: !!fs.existsSync(path.join(TEMPLATES_DIR, `${t.id}.json`)),
+    };
+  });
+  const noteTypes = Object.values(NOTE_TEMPLATES).map(t => {
+    const custom = getNoteTemplate(t.id);
+    return {
+      id: t.id,
+      label: t.label,
+      category: t.category,
+      template: custom?.template || t.template,
+      isCustom: !!fs.existsSync(path.join(TEMPLATES_DIR, `${t.id}.json`)),
+    };
   });
 
   return NextResponse.json({
-    templates,
+    postTypes: xTypes,
+    noteTemplates: noteTypes,
     twitterConfigured: isTwitterConfigured(),
+    geminiConfigured: isGeminiConfigured(),
   });
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { templateId, date, raceIndex, autoPost } = body;
+  const { templateId, date, raceIndex, autoPost, scheduledAt } = body;
 
   if (!templateId || !date) {
     return NextResponse.json({ error: 'templateId と date が必要です' }, { status: 400 });
   }
 
-  const tmpl = getTemplate(templateId);
-  if (!tmpl) return NextResponse.json({ error: 'テンプレートが見つかりません' }, { status: 404 });
-
-  // 予測データ読み込み
-  const predPath = path.join(process.cwd(), 'data', 'weekly', date, 'predictions.json');
-  let predictions: any[] = [];
-  if (fs.existsSync(predPath)) {
-    predictions = JSON.parse(fs.readFileSync(predPath, 'utf-8')).predictions || [];
-  }
-
-  // 結果データ
-  const resPath = path.join(process.cwd(), 'data', 'weekly', date, 'results.json');
-  let results: any[] | null = null;
-  if (fs.existsSync(resPath)) {
-    const resData = JSON.parse(fs.readFileSync(resPath, 'utf-8'));
-    // 結果とpredictionsをマッチング
-    results = predictions.map((p: any) => {
-      const rr = (resData.results || []).find((r: any) => r.raceId === p.raceId);
-      if (!rr) return null;
-      const pivotResult = rr.results?.find((h: any) => h.num === p.pivotHorse?.num);
-      return {
-        ...p,
-        pivot: { ...p.pivotHorse, finish: pivotResult?.finish || 99, inTop3: pivotResult && pivotResult.finish <= 3 },
-        winner: rr.results?.[0],
-        bets: { wide: { hit: false, return: 0 } },
-      };
-    }).filter(Boolean);
-  }
-
-  const postConfig = loadPostConfig();
-  // ペルソナ変数を追加
-  const vars = buildVariables(date, predictions, results, raceIndex);
-  vars.persona_name = postConfig.persona.name || '';
-  vars.persona_signoff = postConfig.persona.signoff || '';
-  vars.persona_fav = postConfig.persona.favHorse || '';
-  const rawText = renderTemplate(tmpl.template, vars);
-  const text = applyRules(rawText, postConfig);
+  const text = await generatePostText(templateId, date, raceIndex, scheduledAt);
+  if (!text) return NextResponse.json({ error: '不明な templateId、または生成失敗' }, { status: 404 });
 
   let postResult = null;
   if (autoPost && isTwitterConfigured()) {
     postResult = await postTweet(text);
-    // ログ保存
     const log = fs.existsSync(POSTS_LOG) ? JSON.parse(fs.readFileSync(POSTS_LOG, 'utf-8')) : [];
-    log.push({ date, templateId, text: text.substring(0, 100), postedAt: new Date().toISOString(), ...postResult });
-    fs.writeFileSync(POSTS_LOG, JSON.stringify(log.slice(-100), null, 2));
+    log.push({
+      date,
+      templateId,
+      text, // フル本文を保存（重複回避コンテキスト用）
+      status: postResult.success ? 'posted' : 'failed',
+      postedAt: new Date().toISOString(),
+      ...postResult,
+    });
+    fs.writeFileSync(POSTS_LOG, JSON.stringify(log.slice(-200), null, 2));
   }
 
-  return NextResponse.json({ text, charCount: text.length, postResult, vars });
+  return NextResponse.json({ text, charCount: text.length, postResult });
 }
 
 export async function PUT(request: NextRequest) {
   const body = await request.json();
-  const { templateId, template } = body;
+  const { templateId } = body;
 
-  if (!templateId || !template) {
-    return NextResponse.json({ error: 'templateId と template が必要です' }, { status: 400 });
-  }
+  if (!templateId) return NextResponse.json({ error: 'templateId が必要です' }, { status: 400 });
 
-  const def = DEFAULT_TEMPLATES[templateId];
-  if (!def) return NextResponse.json({ error: '不明なテンプレートID' }, { status: 404 });
+  const isXType = !!POST_TYPES[templateId];
+  const isNoteType = !!NOTE_TEMPLATES[templateId];
+  if (!isXType && !isNoteType) return NextResponse.json({ error: '不明な templateId' }, { status: 404 });
 
   const savePath = path.join(TEMPLATES_DIR, `${templateId}.json`);
-  fs.writeFileSync(savePath, JSON.stringify({ ...def, template }, null, 2));
+
+  if (isXType) {
+    const { prompt, requiredFacts, lengthHint, hashtagHint } = body;
+    const base = POST_TYPES[templateId];
+    fs.writeFileSync(savePath, JSON.stringify({
+      id: templateId,
+      label: base.label,
+      category: base.category,
+      prompt: prompt ?? base.prompt,
+      requiredFacts: requiredFacts ?? base.requiredFacts,
+      lengthHint: lengthHint ?? base.lengthHint,
+      hashtagHint: hashtagHint ?? base.hashtagHint,
+    }, null, 2));
+  } else {
+    const { template } = body;
+    if (!template) return NextResponse.json({ error: 'template が必要です' }, { status: 400 });
+    const base = NOTE_TEMPLATES[templateId];
+    fs.writeFileSync(savePath, JSON.stringify({ ...base, template }, null, 2));
+  }
 
   return NextResponse.json({ success: true });
 }
