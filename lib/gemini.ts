@@ -49,12 +49,26 @@ export async function generateWithGemini(opts: GenerateOptions): Promise<Generat
       systemInstruction: opts.systemInstruction,
       generationConfig: {
         temperature: opts.temperature ?? 0.95,
-        maxOutputTokens: opts.maxOutputTokens ?? 800,
+        // 思考モデル（Gemini 3.x Pro等）は内部思考にトークンを消費するため余裕を持たせる
+        maxOutputTokens: opts.maxOutputTokens ?? 8192,
       },
     });
 
     const result = await model.generateContent(opts.userPrompt);
-    const text = result.response.text().trim();
+    
+    let text = '';
+    try {
+      text = result.response.text().trim();
+    } catch {
+      // Fallback: candidatesから直接テキスト取得（思考モデル等でtext()が空の場合）
+      const candidates = result.response.candidates;
+      if (candidates && candidates.length > 0) {
+        const parts = candidates[0].content?.parts;
+        if (parts && parts.length > 0) {
+          text = parts.map((p: any) => p.text || '').join('').trim();
+        }
+      }
+    }
     return { ok: true, text };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

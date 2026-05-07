@@ -9,19 +9,24 @@ interface QueueItem {
   date: string; postedAt?: string; tweetId?: string; error?: string;
 }
 
+interface GradedRace {
+  raceName: string; grade: string; venue: string; date: string;
+}
+
 export default function QueuePage() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [stats, setStats] = useState<any>({});
   const [twitterOk, setTwitterOk] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState<'weekday' | 'weekend' | null>(null);
   const [satDate, setSatDate] = useState('');
   const [sunDate, setSunDate] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [msg, setMsg] = useState('');
+  const [graded, setGraded] = useState<GradedRace[]>([]);
+  const [editSchedules, setEditSchedules] = useState<Record<string, string>>({});
 
-  // 今週末の日付を自動設定
   useEffect(() => {
     const now = new Date();
     const day = now.getDay();
@@ -43,23 +48,24 @@ export default function QueuePage() {
   }, []);
 
   useEffect(() => { fetchQueue(); }, [fetchQueue]);
-
-  // 30秒ごとにポーリング
   useEffect(() => {
     const interval = setInterval(fetchQueue, 30000);
     return () => clearInterval(interval);
   }, [fetchQueue]);
 
-  const generateQueue = async () => {
-    setGenerating(true); setMsg('');
+  const generateQueue = async (phase: 'weekday' | 'weekend') => {
+    setGenerating(phase); setMsg('');
     const res = await fetch('/api/post-queue', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'generate', satDate, sunDate }),
+      body: JSON.stringify({ action: `generate-${phase}`, satDate, sunDate }),
     });
     const data = await res.json();
-    setGenerating(false);
-    if (data.success) { setMsg(`✅ ${data.generated}件の投稿を生成しました`); fetchQueue(); }
-    else setMsg(`❌ ${data.error}`);
+    setGenerating(null);
+    if (data.success) {
+      setMsg(`✅ ${data.generated}件の投稿を生成しました`);
+      if (data.graded?.length) setGraded(data.graded);
+      fetchQueue();
+    } else setMsg(`❌ ${data.error}`);
   };
 
   const updateItem = async (id: string, updates: any) => {
@@ -100,6 +106,18 @@ export default function QueuePage() {
     s === 'approved' ? '#4ade80' : s === 'posted' ? '#60a5fa' :
     s === 'rejected' ? '#ef4444' : s === 'failed' ? '#ef4444' : '#facc15';
 
+  const isGradedItem = (item: QueueItem) => item.templateId.startsWith('x-graded-') && item.templateId !== 'x-graded';
+
+  // ISO文字列をdatetime-local用に変換
+  const toLocalInput = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const getSchedule = (item: QueueItem) => editSchedules[item.id] || toLocalInput(item.scheduledAt);
+  const setSchedule = (id: string, val: string) => setEditSchedules(prev => ({ ...prev, [id]: val }));
+
   return (
     <main className="queue-page">
       <Link href="/" className="queue-back">← ダッシュボードに戻る</Link>
@@ -133,13 +151,28 @@ export default function QueuePage() {
             <input type="date" value={sunDate} onChange={e => setSunDate(e.target.value)} />
           </div>
           <div className="queue-gen-buttons">
-            <button onClick={generateQueue} disabled={generating} className="queue-btn queue-btn-generate">
-              {generating ? '⏳ 生成中...' : '🔄 週間キューを生成'}
+            <button onClick={() => generateQueue('weekday')} disabled={!!generating} className="queue-btn queue-btn-weekday">
+              {generating === 'weekday' ? '⏳ 生成中...' : '📝 平日キュー (月〜木)'}
             </button>
+            <button onClick={() => generateQueue('weekend')} disabled={!!generating} className="queue-btn queue-btn-weekend">
+              {generating === 'weekend' ? '⏳ 生成中...' : '🏇 週末キュー (金〜日)'}
+            </button>
+          </div>
+          <div className="queue-gen-buttons">
             <button onClick={approveAll} className="queue-btn queue-btn-approve" disabled={stats.pending === 0}>✅ 全て承認</button>
             <button onClick={clearDone} className="queue-btn queue-btn-clear">🗑️ 完了分削除</button>
           </div>
         </div>
+
+        {graded.length > 0 && (
+          <div className="queue-graded-badges">
+            {graded.map((g, i) => (
+              <span key={i} className={`queue-graded-badge grade-${g.grade.toLowerCase().replace(/\s/g, '')}`}>
+                🏆 {g.grade}: {g.raceName}（{g.venue}）
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {msg && (
@@ -151,16 +184,15 @@ export default function QueuePage() {
         <div className="queue-empty">読み込み中...</div>
       ) : queue.length === 0 ? (
         <div className="queue-card queue-empty">
-          <p>キューは空です。「🔄 週間キューを生成」で月〜日の投稿を一括作成できます</p>
+          <p>キューは空です。上のボタンで投稿を生成してください</p>
         </div>
       ) : (
         <div>
           {queue.map(item => (
             <div key={item.id}
-              className={`queue-card queue-item ${(item.status === 'rejected' || item.status === 'posted') ? 'done' : ''}`}
-              style={{ borderLeftColor: borderColor(item.status) }}>
+              className={`queue-card queue-item ${(item.status === 'rejected' || item.status === 'posted') ? 'done' : ''} ${isGradedItem(item) ? 'graded-item' : ''}`}
+              style={{ borderLeftColor: isGradedItem(item) ? '#f59e0b' : borderColor(item.status) }}>
 
-              {/* ヘッダー */}
               <div className="queue-item-header">
                 <div className="queue-item-meta">
                   <span className={`status-badge status-${item.status}`}>{statusLabel[item.status]}</span>
@@ -170,13 +202,11 @@ export default function QueuePage() {
                 <span className="queue-item-time">🕐 {formatTime(item.scheduledAt)}</span>
               </div>
 
-              {/* プレビュー */}
               <div onClick={() => { setExpandedId(expandedId === item.id ? null : item.id); setEditText(item.text); }}
                 className={`queue-item-preview ${expandedId === item.id ? 'expanded' : 'collapsed'}`}>
                 {expandedId === item.id ? item.text : item.text.replace(/\n/g, ' ').substring(0, 100) + '...'}
               </div>
 
-              {/* 展開時: 編集エリア */}
               {expandedId === item.id && (
                 <div className="queue-edit-area">
                   <textarea value={editText} onChange={e => setEditText(e.target.value)} />
@@ -187,22 +217,38 @@ export default function QueuePage() {
                 </div>
               )}
 
-              {/* アクションボタン */}
               {(item.status === 'pending' || item.status === 'approved') && (
-                <div className="queue-item-actions">
+                <div className="queue-item-actions-wrap">
                   {item.status === 'pending' && (
-                    <button onClick={() => updateItem(item.id, { status: 'approved' })} className="queue-btn queue-btn-approve">✅ 承認</button>
+                    <div className="queue-schedule-edit">
+                      <label>📅 投稿時刻:</label>
+                      <input
+                        type="datetime-local"
+                        value={getSchedule(item)}
+                        onChange={e => setSchedule(item.id, e.target.value)}
+                        className="queue-schedule-input"
+                      />
+                    </div>
                   )}
-                  {item.status === 'pending' && (
-                    <button onClick={() => updateItem(item.id, { status: 'rejected' })} className="queue-btn queue-btn-reject">❌ 拒否</button>
-                  )}
-                  {item.status === 'approved' && (
-                    <button onClick={() => updateItem(item.id, { status: 'pending' })} className="queue-btn queue-btn-pending">⏸️ 保留に戻す</button>
-                  )}
+                  <div className="queue-item-actions">
+                    {item.status === 'pending' && (
+                      <button onClick={() => {
+                        const sched = editSchedules[item.id];
+                        const updates: any = { status: 'approved' };
+                        if (sched) updates.scheduledAt = new Date(sched).toISOString();
+                        updateItem(item.id, updates);
+                      }} className="queue-btn queue-btn-approve">✅ 承認</button>
+                    )}
+                    {item.status === 'pending' && (
+                      <button onClick={() => updateItem(item.id, { status: 'rejected' })} className="queue-btn queue-btn-reject">❌ 拒否</button>
+                    )}
+                    {item.status === 'approved' && (
+                      <button onClick={() => updateItem(item.id, { status: 'pending' })} className="queue-btn queue-btn-pending">⏸️ 保留に戻す</button>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* エラー・成功表示 */}
               {item.error && <div className="queue-item-error">⚠️ {item.error}</div>}
               {item.tweetId && <div className="queue-item-tweet-id">📤 Tweet ID: {item.tweetId}</div>}
             </div>
@@ -210,15 +256,18 @@ export default function QueuePage() {
         </div>
       )}
 
-      {/* 仕組み説明 */}
+      {/* 運用ガイド */}
       <div className="queue-card queue-help">
-        <h3>💡 自動投稿の仕組み</h3>
+        <h3>💡 週間運用フロー</h3>
         <div className="queue-help-body">
-          <div>1. 「🔄 週間キューを生成」→ 月〜日の全投稿が一覧で表示</div>
-          <div>2. 各投稿を確認して「✅ 承認」or「❌ 拒否」（一括承認もOK）</div>
-          <div>3. 承認した投稿は<b style={{ color: '#4ade80' }}>指定時刻に自動でXに投稿</b>される</div>
-          <div>4. サーバー起動中はバックグラウンドで30秒ごとに自動チェック</div>
-          <div className="queue-help-ok">✅ ブラウザを閉じてもサーバーが動いていれば自動投稿されます</div>
+          <div><b>月曜〜:</b> 「📝 平日キュー」で月〜木の日常投稿を生成・承認</div>
+          <div><b>金曜夕方:</b> データ取得ボタン（枠順確定後）→ 予測生成</div>
+          <div><b>金曜夜:</b> 「🏇 週末キュー」で金〜日のレース投稿を生成・承認</div>
+          <div><b>土〜日:</b> 承認済み投稿が<b style={{ color: '#4ade80' }}>自動でXに投稿</b>される</div>
+          <div style={{ marginTop: '8px', color: '#f59e0b' }}>
+            🏆 重賞ウィークは自動検出！ G1は+5件、G2は+3件、G3は+1件の特化投稿が追加
+          </div>
+          <div className="queue-help-ok">✅ サーバー起動中はバックグラウンドで30秒ごとに自動チェック</div>
         </div>
       </div>
     </main>

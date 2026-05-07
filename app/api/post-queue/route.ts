@@ -57,33 +57,110 @@ function pickLifestyle(seed: number): string {
   return LIFESTYLE_TEMPLATES[seed % LIFESTYLE_TEMPLATES.length];
 }
 
-/** 週間の投稿キューを自動生成（月〜日） */
-async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<QueueItem[]> {
+/** 重賞レースを predictions.json → entries.json の順でフォールバック検出 */
+interface GradedRace {
+  raceName: string; grade: string; venue: string; surface: string;
+  distance: number; raceNumber: number; raceIndex: number;
+  date: string; // satDate or sunDate
+}
+
+/** 主要G1レース名パターン（スクレイパーがgrade取得に失敗した場合のフォールバック） */
+const G1_RACE_NAMES = /天皇賞|ダービー|皐月賞|桜花賞|オークス|菊花賞|有馬記念|ジャパンC|安田記念|マイルCS|スプリンターズ|高松宮記念|フェブラリー|チャンピオンズC|NHKマイル|ヴィクトリアマイル|宝塚記念|エリザベス女王杯|秋華賞|阪神JF|朝日杯FS|ホープフルS/;
+
+function detectGradedRaces(satDate: string, sunDate: string): GradedRace[] {
+  const found: GradedRace[] = [];
+  const seenRaceIds = new Set<string>();
+
+  for (const d of [satDate, sunDate]) {
+    // まず predictions.json を確認（枠順確定後）
+    const predPath = path.join(process.cwd(), 'data', 'weekly', d, 'predictions.json');
+    if (fs.existsSync(predPath)) {
+      const preds = JSON.parse(fs.readFileSync(predPath, 'utf-8')).predictions || [];
+      for (let i = 0; i < preds.length; i++) {
+        const p = preds[i];
+        let grade = p.grade;
+        // gradeがOPだがレース名がG1パターンにマッチする場合は修正
+        if ((!grade || grade === 'OP') && G1_RACE_NAMES.test(p.raceName)) grade = 'G1';
+        if (grade && /G[123]/.test(grade)) {
+          seenRaceIds.add(p.raceId || `${d}_${p.raceNumber}`);
+          found.push({
+            raceName: p.raceName, grade, venue: p.venue,
+            surface: p.surface, distance: p.distance,
+            raceNumber: p.raceNumber, raceIndex: i, date: d,
+          });
+        }
+      }
+      continue; // predictions があればそれを使う
+    }
+
+    // predictions.json が無い場合 → entries.json から検出（枠順確定前）
+    const entriesPath = path.join(process.cwd(), 'data', 'weekly', d, 'entries.json');
+    if (fs.existsSync(entriesPath)) {
+      const races = JSON.parse(fs.readFileSync(entriesPath, 'utf-8')).races || [];
+      for (let i = 0; i < races.length; i++) {
+        const r = races[i];
+        let grade = r.grade;
+        if ((!grade || grade === 'OP') && G1_RACE_NAMES.test(r.raceName)) grade = 'G1';
+        if (grade && /G[123]/.test(grade)) {
+          const key = r.raceId || `${d}_${r.raceNumber}`;
+          if (seenRaceIds.has(key)) continue;
+          found.push({
+            raceName: r.raceName, grade, venue: r.courseName || '',
+            surface: r.surface || '', distance: r.distance || 0,
+            raceNumber: r.raceNumber || 0, raceIndex: i, date: d,
+          });
+        }
+      }
+    }
+  }
+  return found;
+}
+
+/** グレードに応じた平日追加投稿テンプレ */
+function getGradedWeekdayTemplates(grade: string): string[] {
+  if (grade === 'G1') return ['x-graded-history', 'x-graded-memory', 'x-graded-data'];
+  if (grade === 'G2') return ['x-graded-history', 'x-graded-data'];
+  return ['x-graded-data']; // G3
+}
+
+/** グレードに応じた週末追加投稿テンプレ */
+function getGradedWeekendTemplates(grade: string): string[] {
+  if (grade === 'G1') return ['x-graded-preview', 'x-graded-ranking', 'x-graded-odds', 'x-graded-upset', 'x-graded-countdown'];
+  if (grade === 'G2') return ['x-graded-preview', 'x-graded-keyhorse', 'x-graded-upset'];
+  return ['x-graded-keyhorse']; // G3
+}
+
+/** グレード用ラベル生成 */
+const GRADED_LABELS: Record<string, string> = {
+  'x-graded-history': '🏆 レースの歴史', 'x-graded-memory': '🏆 思い出話',
+  'x-graded-data': '🏆 データ考察', 'x-graded-preview': '🏆 出走馬注目点',
+  'x-graded-ranking': '🏆 全頭短評', 'x-graded-odds': '🏆 オッズ考察',
+  'x-graded-keyhorse': '🏆 鍵馬ピック', 'x-graded-countdown': '🏆 直前カウントダウン',
+  'x-graded-upset': '🏆 激走穴馬',
+};
+
+type Plan = { templateId: string; label: string; date: string; raceIndex?: number; scheduledAt: string };
+
+/** 共通: plansからキューアイテムを生成 */
+async function buildQueueItems(plans: Plan[]): Promise<QueueItem[]> {
   const items: QueueItem[] = [];
   const now = new Date();
   const id = () => `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  for (const p of plans) {
+    const text = await generateText(p.templateId, p.date, p.raceIndex, p.scheduledAt);
+    items.push({
+      id: id(), templateId: p.templateId, label: p.label, date: p.date,
+      raceIndex: p.raceIndex, text, charCount: text.length,
+      scheduledAt: p.scheduledAt, status: 'pending', createdAt: now.toISOString(),
+    });
+  }
+  return items.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+}
 
-  // 予測データの有無を確認
-  const satPredPath = path.join(process.cwd(), 'data', 'weekly', satDate, 'predictions.json');
-  const sunPredPath = path.join(process.cwd(), 'data', 'weekly', sunDate, 'predictions.json');
-  const hasSat = fs.existsSync(satPredPath);
-  const hasSun = fs.existsSync(sunPredPath);
-
-  // 注目レースのindexを取得
-  const getTopRaceIndices = (predPath: string, count: number): number[] => {
-    if (!fs.existsSync(predPath)) return [];
-    const preds = JSON.parse(fs.readFileSync(predPath, 'utf-8')).predictions || [];
-    return preds
-      .map((p: any, i: number) => ({ i, score: p.pivotHorse?.score || 0, shouldBet: p.shouldBet }))
-      .filter((p: any) => p.shouldBet !== false)
-      .sort((a: any, b: any) => b.score - a.score)
-      .slice(0, count)
-      .map((p: any) => p.i);
-  };
-
-  // ====== 日付計算 ======
+/** Phase 1: 平日キュー（月〜木） */
+async function generateWeekdayQueue(satDate: string, sunDate: string): Promise<QueueItem[]> {
   const satD = new Date(satDate + 'T00:00:00');
-  const monDate = new Date(satD); monDate.setDate(satD.getDate() - 5); // 月曜
+  const monDate = new Date(satD); monDate.setDate(satD.getDate() - 5);
   const getDateStr = (base: Date, offset: number) => {
     const d = new Date(base); d.setDate(base.getDate() + offset);
     return d.toISOString().split('T')[0];
@@ -92,12 +169,7 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
   const tueStr = getDateStr(monDate, 1);
   const wedStr = getDateStr(monDate, 2);
   const thuStr = getDateStr(monDate, 3);
-  const friStr = getDateStr(monDate, 4);
-  const nextMonStr = getDateStr(monDate, 7);
 
-  // 各種別の予定をひとまず "宣言" だけしておき、Gemini呼び出しは最後にまとめてawait
-  // （投稿予定時刻ごとの状況コンテキストを LLM に渡せるよう、scheduledAt を渡す）
-  type Plan = { templateId: string; label: string; date: string; raceIndex?: number; scheduledAt: string };
   const plans: Plan[] = [];
 
   // ====== 月曜 ======
@@ -113,14 +185,63 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
   // ====== 木曜 ======
   plans.push({ templateId: pickLifestyle(2), label: '🐦 日常ツイート（木）', date: thuStr, scheduledAt: `${thuStr}T22:00:00` });
 
+  // ====== 重賞 平日追加（予測データなしでもレース名で生成可能） ======
+  const graded = detectGradedRaces(satDate, sunDate);
+  const weekdaySlots = [
+    { day: tueStr, time: '12:00:00' },
+    { day: wedStr, time: '20:00:00' },
+    { day: thuStr, time: '12:00:00' },
+  ];
+  let slotIdx = 0;
+  for (const race of graded) {
+    const templates = getGradedWeekdayTemplates(race.grade);
+    for (const tmpl of templates) {
+      if (slotIdx >= weekdaySlots.length) break;
+      const slot = weekdaySlots[slotIdx++];
+      plans.push({
+        templateId: tmpl,
+        label: `${GRADED_LABELS[tmpl]} ${race.raceName}`,
+        date: race.date, raceIndex: race.raceIndex,
+        scheduledAt: `${slot.day}T${slot.time}`,
+      });
+    }
+  }
+
+  return buildQueueItems(plans);
+}
+
+/** Phase 2: 週末キュー（金〜日） */
+async function generateWeekendQueue(satDate: string, sunDate: string): Promise<QueueItem[]> {
+  const satD = new Date(satDate + 'T00:00:00');
+  const monDate = new Date(satD); monDate.setDate(satD.getDate() - 5);
+  const friStr = new Date(monDate.getTime()); friStr.setDate(monDate.getDate() + 4);
+  const friDateStr = friStr.toISOString().split('T')[0];
+
+  const satPredPath = path.join(process.cwd(), 'data', 'weekly', satDate, 'predictions.json');
+  const sunPredPath = path.join(process.cwd(), 'data', 'weekly', sunDate, 'predictions.json');
+  const hasSat = fs.existsSync(satPredPath);
+  const hasSun = fs.existsSync(sunPredPath);
+
+  const getTopRaceIndices = (predPath: string, count: number): number[] => {
+    if (!fs.existsSync(predPath)) return [];
+    const preds = JSON.parse(fs.readFileSync(predPath, 'utf-8')).predictions || [];
+    return preds
+      .map((p: any, i: number) => ({ i, score: p.pivotHorse?.score || 0, shouldBet: p.shouldBet }))
+      .filter((p: any) => p.shouldBet !== false)
+      .sort((a: any, b: any) => b.score - a.score)
+      .slice(0, count)
+      .map((p: any) => p.i);
+  };
+
+  const plans: Plan[] = [];
+
   // ====== 金曜 ======
-  if (hasSat) plans.push({ templateId: 'x-preview', label: '🐦① 前日予告', date: satDate, scheduledAt: `${friStr}T20:30:00` });
-  plans.push({ templateId: pickLifestyle(0), label: '🐦 日常ツイート（金）', date: friStr, scheduledAt: `${friStr}T22:00:00` });
+  if (hasSat) plans.push({ templateId: 'x-preview', label: '🐦① 前日予告', date: satDate, scheduledAt: `${friDateStr}T20:30:00` });
+  plans.push({ templateId: pickLifestyle(0), label: '🐦 日常ツイート（金）', date: friDateStr, scheduledAt: `${friDateStr}T22:00:00` });
 
   // ====== 土曜 ======
   if (hasSat) {
     plans.push({ templateId: 'x-morning', label: '🐦② 朝イチ注目（土）', date: satDate, scheduledAt: `${satDate}T08:00:00` });
-
     const satTop = getTopRaceIndices(satPredPath, 3);
     const satPreds = JSON.parse(fs.readFileSync(satPredPath, 'utf-8')).predictions || [];
     for (const ri of satTop) {
@@ -135,7 +256,6 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
         scheduledAt: `${satDate}T${String(schedH).padStart(2,'0')}:${String(m || 0).padStart(2,'0')}:00`,
       });
     }
-
     plans.push({ templateId: 'x-daily', label: '🐦⑥ 日次まとめ（土）', date: satDate, scheduledAt: `${satDate}T18:00:00` });
     plans.push({ templateId: 'x-bias', label: '🐦⑩ 馬場傾向速報（土→日）', date: satDate, scheduledAt: `${satDate}T19:00:00` });
   }
@@ -143,7 +263,6 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
   // ====== 日曜 ======
   if (hasSun) {
     plans.push({ templateId: 'x-morning', label: '🐦② 朝イチ注目（日）', date: sunDate, scheduledAt: `${sunDate}T08:00:00` });
-
     const sunTop = getTopRaceIndices(sunPredPath, 3);
     const sunPreds = JSON.parse(fs.readFileSync(sunPredPath, 'utf-8')).predictions || [];
     for (const ri of sunTop) {
@@ -158,22 +277,50 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
         scheduledAt: `${sunDate}T${String(schedH).padStart(2,'0')}:00:00`,
       });
     }
-
     plans.push({ templateId: 'x-value', label: '🐦⑧ 穴馬ピック（日）', date: sunDate, scheduledAt: `${sunDate}T11:30:00` });
     plans.push({ templateId: 'x-daily', label: '🐦⑥ 日次まとめ（日）', date: sunDate, scheduledAt: `${sunDate}T18:00:00` });
   }
 
-  // ===== 順次に LLM 呼び出し（並列にすると Gemini レート制限に引っかかりやすい） =====
-  for (const p of plans) {
-    const text = await generateText(p.templateId, p.date, p.raceIndex, p.scheduledAt);
-    items.push({
-      id: id(), templateId: p.templateId, label: p.label, date: p.date,
-      raceIndex: p.raceIndex, text, charCount: text.length,
-      scheduledAt: p.scheduledAt, status: 'pending', createdAt: now.toISOString(),
-    });
+  // ====== 重賞 週末追加 ======
+  const graded = detectGradedRaces(satDate, sunDate);
+  for (const race of graded) {
+    const templates = getGradedWeekendTemplates(race.grade);
+    const raceDay = race.date;
+    const prevDay = new Date(raceDay + 'T00:00:00');
+    prevDay.setDate(prevDay.getDate() - 1);
+    const prevDayStr = prevDay.toISOString().split('T')[0];
+
+    // 週末追加投稿のスロット割り当て
+    const weekendSlots: { day: string; time: string }[] = [];
+    for (const tmpl of templates) {
+      if (tmpl === 'x-graded-countdown') {
+        weekendSlots.push({ day: raceDay, time: '08:30:00' });
+      } else if (tmpl === 'x-graded-preview') {
+        weekendSlots.push({ day: prevDayStr, time: '18:00:00' });
+      } else if (tmpl === 'x-graded-ranking') {
+        weekendSlots.push({ day: prevDayStr, time: '21:00:00' });
+      } else if (tmpl === 'x-graded-odds') {
+        weekendSlots.push({ day: raceDay, time: '09:30:00' });
+      } else if (tmpl === 'x-graded-upset') {
+        weekendSlots.push({ day: raceDay, time: '10:00:00' });
+      } else if (tmpl === 'x-graded-keyhorse') {
+        weekendSlots.push({ day: raceDay, time: '10:30:00' });
+      }
+    }
+
+    for (let i = 0; i < templates.length; i++) {
+      const slot = weekendSlots[i];
+      if (!slot) continue;
+      plans.push({
+        templateId: templates[i],
+        label: `${GRADED_LABELS[templates[i]]} ${race.raceName}`,
+        date: race.date, raceIndex: race.raceIndex,
+        scheduledAt: `${slot.day}T${slot.time}`,
+      });
+    }
   }
 
-  return items.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+  return buildQueueItems(plans);
 }
 
 /** 時刻が来た承認済み投稿を自動投稿 */
@@ -227,18 +374,40 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { action, satDate, sunDate } = body;
 
-  if (action === 'generate') {
+  if (action === 'generate-weekday') {
     if (!satDate || !sunDate) {
       return NextResponse.json({ error: 'satDate と sunDate が必要です' }, { status: 400 });
     }
-    const items = await generateWeeklyQueue(satDate, sunDate);
-    // 既存キューに追加（同じ日のものは上書き）
+    const items = await generateWeekdayQueue(satDate, sunDate);
+    const graded = detectGradedRaces(satDate, sunDate);
+    // 既存キューから月〜木のscheduledAtのものだけ除去（金〜日は残す）
     let queue = loadQueue();
-    queue = queue.filter(q => q.date !== satDate && q.date !== sunDate);
+    const satD = new Date(satDate + 'T00:00:00');
+    const friDate = new Date(satD); friDate.setDate(satD.getDate() - 1);
+    const friStr = friDate.toISOString().split('T')[0];
+    queue = queue.filter(q => q.scheduledAt >= `${friStr}T00:00:00`);
     queue.push(...items);
     queue.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
     saveQueue(queue);
-    return NextResponse.json({ success: true, generated: items.length, queue });
+    return NextResponse.json({ success: true, generated: items.length, graded, queue });
+  }
+
+  if (action === 'generate-weekend') {
+    if (!satDate || !sunDate) {
+      return NextResponse.json({ error: 'satDate と sunDate が必要です' }, { status: 400 });
+    }
+    const items = await generateWeekendQueue(satDate, sunDate);
+    const graded = detectGradedRaces(satDate, sunDate);
+    // 既存キューから金〜日のscheduledAtのものだけ除去（月〜木は残す）
+    let queue = loadQueue();
+    const satD = new Date(satDate + 'T00:00:00');
+    const friDate = new Date(satD); friDate.setDate(satD.getDate() - 1);
+    const friStr = friDate.toISOString().split('T')[0];
+    queue = queue.filter(q => q.scheduledAt < `${friStr}T00:00:00`);
+    queue.push(...items);
+    queue.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+    saveQueue(queue);
+    return NextResponse.json({ success: true, generated: items.length, graded, queue });
   }
 
   if (action === 'approve-all') {

@@ -49,7 +49,6 @@ export async function generatePost(input: GeneratePostInput): Promise<GeneratePo
     systemInstruction,
     userPrompt,
     temperature: 0.95,
-    maxOutputTokens: 800,
   });
 
   if (!result.ok) {
@@ -66,7 +65,6 @@ export async function generatePost(input: GeneratePostInput): Promise<GeneratePo
       systemInstruction,
       userPrompt: retryPrompt,
       temperature: 0.85, // リトライ時は少し下げて指示遵守を優先
-      maxOutputTokens: 800,
     });
     if (retry.ok) {
       text = sanitize(retry.text);

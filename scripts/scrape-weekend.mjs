@@ -203,13 +203,25 @@ async function scrapeShutuba(raceId) {
     else if (raceData1.includes('雨')) weather = '雨';
     else if (raceData1.includes('雪')) weather = '雪';
 
-    // グレード判定
+    // グレード判定（テキスト + HTMLクラス + レース名パターン）
     let grade = undefined;
-    if (raceData2.includes('G1') || raceData2.includes('GⅠ') || raceName.includes('G1')) grade = 'G1';
-    else if (raceData2.includes('G2') || raceData2.includes('GⅡ')) grade = 'G2';
-    else if (raceData2.includes('G3') || raceData2.includes('GⅢ')) grade = 'G3';
-    else if (raceData2.includes('(L)') || raceData2.includes('リステッド')) grade = 'リステッド';
-    else if (raceData2.includes('オープン') || raceData2.includes('OP')) grade = 'OP';
+    const raceNameHtml = $('.RaceName').html() || '';
+    const raceData2Html = $('.RaceData02').html() || '';
+    const gradeIconClass = $('.RaceName .Icon_GradeType, .Icon_GradeType').attr('class') || '';
+    const allGradeText = raceData2 + ' ' + raceData1 + ' ' + raceName + ' ' + raceNameHtml + ' ' + raceData2Html + ' ' + gradeIconClass;
+
+    // HTMLクラスから判定（最も確実）
+    if (gradeIconClass.includes('Icon_GradeType1') || gradeIconClass.includes('Grade1')) grade = 'G1';
+    else if (gradeIconClass.includes('Icon_GradeType2') || gradeIconClass.includes('Grade2')) grade = 'G2';
+    else if (gradeIconClass.includes('Icon_GradeType3') || gradeIconClass.includes('Grade3')) grade = 'G3';
+    // テキストから判定
+    else if (/G[1１Ⅰ]|GI(?!I)|Ｇ１/.test(allGradeText)) grade = 'G1';
+    else if (/G[2２Ⅱ]|GII(?!I)|Ｇ２/.test(allGradeText)) grade = 'G2';
+    else if (/G[3３Ⅲ]|GIII|Ｇ３/.test(allGradeText)) grade = 'G3';
+    // レース名パターンからのフォールバック（主要G1）
+    else if (/天皇賞|ダービー|皐月賞|桜花賞|オークス|菊花賞|有馬記念|ジャパンC|安田記念|マイルCS|スプリンターズ|高松宮記念|フェブラリー|チャンピオンズC|NHKマイル|ヴィクトリアマイル|宝塚記念|エリザベス女王杯|秋華賞|阪神JF|朝日杯FS|ホープフルS/.test(raceName)) grade = 'G1';
+    else if (/(L)|(Ｌ)|リステッド/.test(allGradeText)) grade = 'リステッド';
+    else if (/オープン|OP|ＯＰ/.test(allGradeText)) grade = 'OP';
 
     // 出走馬
     const entries = [];
