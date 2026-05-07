@@ -47,8 +47,8 @@ function appendLog(item: QueueItem) {
 }
 
 /** 投稿文を生成（直接ロジック呼び出し） */
-function generateText(templateId: string, date: string, raceIndex?: number): string {
-  return generatePostText(templateId, date, raceIndex);
+async function generateText(templateId: string, date: string, raceIndex?: number, scheduledAt?: string): Promise<string> {
+  return await generatePostText(templateId, date, raceIndex, scheduledAt);
 }
 
 /** 日常テンプレートのローテーション */
@@ -95,70 +95,31 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
   const friStr = getDateStr(monDate, 4);
   const nextMonStr = getDateStr(monDate, 7);
 
+  // 各種別の予定をひとまず "宣言" だけしておき、Gemini呼び出しは最後にまとめてawait
+  // （投稿予定時刻ごとの状況コンテキストを LLM に渡せるよう、scheduledAt を渡す）
+  type Plan = { templateId: string; label: string; date: string; raceIndex?: number; scheduledAt: string };
+  const plans: Plan[] = [];
+
   // ====== 月曜 ======
-  // 週間レポート（前週の成績）
-  items.push({
-    id: id(), templateId: 'x-weekly', label: '🐦⑦ 週間レポート', date: satDate,
-    text: generateText('x-weekly', satDate),
-    charCount: 0, scheduledAt: `${monStr}T10:00:00`,
-    status: 'pending', createdAt: now.toISOString(),
-  });
-  // 日常（月曜夜）
-  items.push({
-    id: id(), templateId: pickLifestyle(0), label: '🐦 日常ツイート（月）', date: monStr,
-    text: generateText(pickLifestyle(0), monStr),
-    charCount: 0, scheduledAt: `${monStr}T20:00:00`,
-    status: 'pending', createdAt: now.toISOString(),
-  });
+  plans.push({ templateId: 'x-weekly', label: '🐦⑦ 週間レポート', date: satDate, scheduledAt: `${monStr}T10:00:00` });
+  plans.push({ templateId: pickLifestyle(0), label: '🐦 日常ツイート（月）', date: monStr, scheduledAt: `${monStr}T20:00:00` });
 
   // ====== 火曜 ======
-  items.push({
-    id: id(), templateId: pickLifestyle(1), label: '🐦 日常ツイート（火）', date: tueStr,
-    text: generateText(pickLifestyle(1), tueStr),
-    charCount: 0, scheduledAt: `${tueStr}T21:00:00`,
-    status: 'pending', createdAt: now.toISOString(),
-  });
+  plans.push({ templateId: pickLifestyle(1), label: '🐦 日常ツイート（火）', date: tueStr, scheduledAt: `${tueStr}T21:00:00` });
 
   // ====== 水曜 ======
-  items.push({
-    id: id(), templateId: 'x-course', label: '🐦⑨ コース解説', date: satDate,
-    text: generateText('x-course', satDate),
-    charCount: 0, scheduledAt: `${wedStr}T12:00:00`,
-    status: 'pending', createdAt: now.toISOString(),
-  });
+  plans.push({ templateId: 'x-course', label: '🐦⑨ コース解説', date: satDate, scheduledAt: `${wedStr}T12:00:00` });
 
   // ====== 木曜 ======
-  items.push({
-    id: id(), templateId: pickLifestyle(2), label: '🐦 日常ツイート（木）', date: thuStr,
-    text: generateText(pickLifestyle(2), thuStr),
-    charCount: 0, scheduledAt: `${thuStr}T22:00:00`,
-    status: 'pending', createdAt: now.toISOString(),
-  });
+  plans.push({ templateId: pickLifestyle(2), label: '🐦 日常ツイート（木）', date: thuStr, scheduledAt: `${thuStr}T22:00:00` });
 
   // ====== 金曜 ======
-  if (hasSat) {
-    items.push({
-      id: id(), templateId: 'x-preview', label: '🐦① 前日予告', date: satDate,
-      text: generateText('x-preview', satDate),
-      charCount: 0, scheduledAt: `${friStr}T20:30:00`,
-      status: 'pending', createdAt: now.toISOString(),
-    });
-  }
-  items.push({
-    id: id(), templateId: pickLifestyle(0), label: '🐦 日常ツイート（金）', date: friStr,
-    text: generateText(pickLifestyle(0), friStr),
-    charCount: 0, scheduledAt: `${friStr}T22:00:00`,
-    status: 'pending', createdAt: now.toISOString(),
-  });
+  if (hasSat) plans.push({ templateId: 'x-preview', label: '🐦① 前日予告', date: satDate, scheduledAt: `${friStr}T20:30:00` });
+  plans.push({ templateId: pickLifestyle(0), label: '🐦 日常ツイート（金）', date: friStr, scheduledAt: `${friStr}T22:00:00` });
 
   // ====== 土曜 ======
   if (hasSat) {
-    items.push({
-      id: id(), templateId: 'x-morning', label: '🐦② 朝イチ注目（土）', date: satDate,
-      text: generateText('x-morning', satDate),
-      charCount: 0, scheduledAt: `${satDate}T08:00:00`,
-      status: 'pending', createdAt: now.toISOString(),
-    });
+    plans.push({ templateId: 'x-morning', label: '🐦② 朝イチ注目（土）', date: satDate, scheduledAt: `${satDate}T08:00:00` });
 
     const satTop = getTopRaceIndices(satPredPath, 3);
     const satPreds = JSON.parse(fs.readFileSync(satPredPath, 'utf-8')).predictions || [];
@@ -167,39 +128,21 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
       const postTime = race?.postTime || '12:00';
       const [h, m] = postTime.split(':').map(Number);
       const schedH = Math.max(h - 1, 8);
-      items.push({
-        id: id(), templateId: race?.grade ? 'x-graded' : 'x-race',
+      plans.push({
+        templateId: race?.grade ? 'x-graded' : 'x-race',
         label: `🐦${race?.grade ? '④ 重賞' : '③ 個別'}予想 ${race?.venue}${race?.raceNumber}R`,
         date: satDate, raceIndex: ri,
-        text: generateText(race?.grade ? 'x-graded' : 'x-race', satDate, ri),
-        charCount: 0, scheduledAt: `${satDate}T${String(schedH).padStart(2,'0')}:${String(m || 0).padStart(2,'0')}:00`,
-        status: 'pending', createdAt: now.toISOString(),
+        scheduledAt: `${satDate}T${String(schedH).padStart(2,'0')}:${String(m || 0).padStart(2,'0')}:00`,
       });
     }
 
-    items.push({
-      id: id(), templateId: 'x-daily', label: '🐦⑥ 日次まとめ（土）', date: satDate,
-      text: generateText('x-daily', satDate),
-      charCount: 0, scheduledAt: `${satDate}T18:00:00`,
-      status: 'pending', createdAt: now.toISOString(),
-    });
-
-    items.push({
-      id: id(), templateId: 'x-bias', label: '🐦⑩ 馬場傾向速報（土→日）', date: satDate,
-      text: generateText('x-bias', satDate),
-      charCount: 0, scheduledAt: `${satDate}T19:00:00`,
-      status: 'pending', createdAt: now.toISOString(),
-    });
+    plans.push({ templateId: 'x-daily', label: '🐦⑥ 日次まとめ（土）', date: satDate, scheduledAt: `${satDate}T18:00:00` });
+    plans.push({ templateId: 'x-bias', label: '🐦⑩ 馬場傾向速報（土→日）', date: satDate, scheduledAt: `${satDate}T19:00:00` });
   }
 
   // ====== 日曜 ======
   if (hasSun) {
-    items.push({
-      id: id(), templateId: 'x-morning', label: '🐦② 朝イチ注目（日）', date: sunDate,
-      text: generateText('x-morning', sunDate),
-      charCount: 0, scheduledAt: `${sunDate}T08:00:00`,
-      status: 'pending', createdAt: now.toISOString(),
-    });
+    plans.push({ templateId: 'x-morning', label: '🐦② 朝イチ注目（日）', date: sunDate, scheduledAt: `${sunDate}T08:00:00` });
 
     const sunTop = getTopRaceIndices(sunPredPath, 3);
     const sunPreds = JSON.parse(fs.readFileSync(sunPredPath, 'utf-8')).predictions || [];
@@ -208,33 +151,27 @@ async function generateWeeklyQueue(satDate: string, sunDate: string): Promise<Qu
       const postTime = race?.postTime || '12:00';
       const [h] = postTime.split(':').map(Number);
       const schedH = Math.max(h - 1, 8);
-      items.push({
-        id: id(), templateId: race?.grade ? 'x-graded' : 'x-race',
+      plans.push({
+        templateId: race?.grade ? 'x-graded' : 'x-race',
         label: `🐦${race?.grade ? '④ 重賞' : '③ 個別'}予想 ${race?.venue}${race?.raceNumber}R`,
         date: sunDate, raceIndex: ri,
-        text: generateText(race?.grade ? 'x-graded' : 'x-race', sunDate, ri),
-        charCount: 0, scheduledAt: `${sunDate}T${String(schedH).padStart(2,'0')}:00:00`,
-        status: 'pending', createdAt: now.toISOString(),
+        scheduledAt: `${sunDate}T${String(schedH).padStart(2,'0')}:00:00`,
       });
     }
 
-    items.push({
-      id: id(), templateId: 'x-value', label: '🐦⑧ 穴馬ピック（日）', date: sunDate,
-      text: generateText('x-value', sunDate),
-      charCount: 0, scheduledAt: `${sunDate}T11:30:00`,
-      status: 'pending', createdAt: now.toISOString(),
-    });
-
-    items.push({
-      id: id(), templateId: 'x-daily', label: '🐦⑥ 日次まとめ（日）', date: sunDate,
-      text: generateText('x-daily', sunDate),
-      charCount: 0, scheduledAt: `${sunDate}T18:00:00`,
-      status: 'pending', createdAt: now.toISOString(),
-    });
+    plans.push({ templateId: 'x-value', label: '🐦⑧ 穴馬ピック（日）', date: sunDate, scheduledAt: `${sunDate}T11:30:00` });
+    plans.push({ templateId: 'x-daily', label: '🐦⑥ 日次まとめ（日）', date: sunDate, scheduledAt: `${sunDate}T18:00:00` });
   }
 
-  // 文字数を計算
-  items.forEach(item => { item.charCount = item.text.length; });
+  // ===== 順次に LLM 呼び出し（並列にすると Gemini レート制限に引っかかりやすい） =====
+  for (const p of plans) {
+    const text = await generateText(p.templateId, p.date, p.raceIndex, p.scheduledAt);
+    items.push({
+      id: id(), templateId: p.templateId, label: p.label, date: p.date,
+      raceIndex: p.raceIndex, text, charCount: text.length,
+      scheduledAt: p.scheduledAt, status: 'pending', createdAt: now.toISOString(),
+    });
+  }
 
   return items.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
 }
