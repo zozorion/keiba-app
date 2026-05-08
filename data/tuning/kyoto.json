@@ -1,0 +1,27 @@
+{
+  "venue": "kyoto",
+  "venueJa": "京都",
+  "version": 3,
+  "lastLearnDate": "2026-05-03",
+  "weeksLearned": 4,
+  "totalRaces": 48,
+  "weights": {
+    "sireMaxPoints": 16,
+    "sireReliabilityThresholds": [
+      5,
+      10,
+      20,
+      30
+    ],
+    "jockeyMultiplier": 1,
+    "trainerMultiplier": 0.5,
+    "frameMaxPoints": 8,
+    "widePartnerCount": 5
+  },
+  "performance": {
+    "pivotTop3Rate": 29,
+    "wideHitRate": 40,
+    "wideROI": 74,
+    "tanshoROI": 44
+  }
+}

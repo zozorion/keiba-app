@@ -1,0 +1,689 @@
+{
+  "course": "京都",
+  "course_code": 8,
+  "surface": "ダート",
+  "distance": 1800,
+  "total_races": 861,
+  "total_runners": 11316,
+  "period": "2016-2026",
+  "conditions": {
+    "good": {
+      "total_runners": 9094,
+      "total_races": 689,
+      "frame_bias": {
+        "1": {
+          "total": 919,
+          "wins": 78,
+          "win_rate": 8.5,
+          "top2_rate": 17.1,
+          "top3_rate": 24.5,
+          "win_roi": 23.0
+        },
+        "2": {
+          "total": 981,
+          "wins": 79,
+          "win_rate": 8.1,
+          "top2_rate": 15.9,
+          "top3_rate": 23.9,
+          "win_roi": 25.0
+        },
+        "3": {
+          "total": 1045,
+          "wins": 70,
+          "win_rate": 6.7,
+          "top2_rate": 14.5,
+          "top3_rate": 21.1,
+          "win_roi": 23.0
+        },
+        "4": {
+          "total": 1109,
+          "wins": 79,
+          "win_rate": 7.1,
+          "top2_rate": 15.8,
+          "top3_rate": 23.8,
+          "win_roi": 14.0
+        },
+        "5": {
+          "total": 1189,
+          "wins": 87,
+          "win_rate": 7.3,
+          "top2_rate": 14.6,
+          "top3_rate": 22.3,
+          "win_roi": 21.0
+        },
+        "6": {
+          "total": 1237,
+          "wins": 110,
+          "win_rate": 8.9,
+          "top2_rate": 14.5,
+          "top3_rate": 21.8,
+          "win_roi": 28.0
+        },
+        "7": {
+          "total": 1293,
+          "wins": 83,
+          "win_rate": 6.4,
+          "top2_rate": 14.5,
+          "top3_rate": 22.7,
+          "win_roi": 46.0
+        },
+        "8": {
+          "total": 1321,
+          "wins": 105,
+          "win_rate": 7.9,
+          "top2_rate": 15.0,
+          "top3_rate": 22.5,
+          "win_roi": 19.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 6432,
+          "wins": 520,
+          "win_rate": 8.1,
+          "top3_rate": 23.4,
+          "win_roi": 9.0
+        },
+        "先行": {
+          "total": 864,
+          "wins": 91,
+          "win_rate": 10.5,
+          "top3_rate": 28.8,
+          "win_roi": 93.0
+        },
+        "差し": {
+          "total": 900,
+          "wins": 58,
+          "win_rate": 6.4,
+          "top3_rate": 22.1,
+          "win_roi": 59.0
+        },
+        "追込": {
+          "total": 898,
+          "wins": 22,
+          "win_rate": 2.4,
+          "top3_rate": 12.7,
+          "win_roi": 44.0
+        },
+        "_front_remaining_score": 65
+      },
+      "pace": {
+        "fastest_last_3f": {
+          "total": 264,
+          "win_rate": 44.3,
+          "top3_rate": 80.3
+        },
+        "top3_last_3f": {
+          "total": 764,
+          "win_rate": 27.6,
+          "top3_rate": 68.6
+        },
+        "avg_last_3f": 39.0
+      },
+      "meet_timing": {
+        "by_meet": {
+          "1回京都": {
+            "total_runners": 1717,
+            "total_races": 129,
+            "inner_win_rate": 7.3,
+            "outer_win_rate": 7.7
+          },
+          "2回京都": {
+            "total_runners": 1774,
+            "total_races": 141,
+            "inner_win_rate": 8.3,
+            "outer_win_rate": 7.7
+          },
+          "3回京都": {
+            "total_runners": 2695,
+            "total_races": 195,
+            "inner_win_rate": 8.0,
+            "outer_win_rate": 6.6
+          },
+          "4回京都": {
+            "total_runners": 1366,
+            "total_races": 108,
+            "inner_win_rate": 6.6,
+            "outer_win_rate": 9.1
+          },
+          "5回京都": {
+            "total_runners": 940,
+            "total_races": 69,
+            "inner_win_rate": 6.8,
+            "outer_win_rate": 7.8
+          },
+          "6回京都": {
+            "total_runners": 302,
+            "total_races": 24,
+            "inner_win_rate": 8.5,
+            "outer_win_rate": 7.6
+          },
+          "7回京都": {
+            "total_runners": 300,
+            "total_races": 23,
+            "inner_win_rate": 6.0,
+            "outer_win_rate": 9.0
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 3726,
+            "total_races": 290,
+            "inner_win_rate": 8.4,
+            "outer_win_rate": 7.3,
+            "front_runner_wins": 253,
+            "closer_wins": 37
+          },
+          "後半": {
+            "total_runners": 5368,
+            "total_races": 399,
+            "inner_win_rate": 7.0,
+            "outer_win_rate": 7.9,
+            "front_runner_wins": 358,
+            "closer_wins": 43
+          }
+        }
+      },
+      "sire_ranking": [
+        {
+          "sire": "ナダルNadal(米)",
+          "total": 51,
+          "horses": 30,
+          "wins": 12,
+          "top3": 26,
+          "win_rate": 23.5,
+          "top3_rate": 51.0,
+          "win_roi": 94.0
+        },
+        {
+          "sire": "ロードカナロア",
+          "total": 53,
+          "horses": 38,
+          "wins": 10,
+          "top3": 12,
+          "win_rate": 18.9,
+          "top3_rate": 22.6,
+          "win_roi": 36.0
+        },
+        {
+          "sire": "モーニン",
+          "total": 16,
+          "horses": 11,
+          "wins": 3,
+          "top3": 6,
+          "win_rate": 18.8,
+          "top3_rate": 37.5,
+          "win_roi": 19.0
+        },
+        {
+          "sire": "Arrogate(米)",
+          "total": 11,
+          "horses": 5,
+          "wins": 2,
+          "top3": 4,
+          "win_rate": 18.2,
+          "top3_rate": 36.4,
+          "win_roi": 196.0
+        },
+        {
+          "sire": "American Pharoah(米)",
+          "total": 12,
+          "horses": 10,
+          "wins": 2,
+          "top3": 4,
+          "win_rate": 16.7,
+          "top3_rate": 33.3,
+          "win_roi": 39.0
+        },
+        {
+          "sire": "Gun Runner(米)",
+          "total": 12,
+          "horses": 7,
+          "wins": 2,
+          "top3": 6,
+          "win_rate": 16.7,
+          "top3_rate": 50.0,
+          "win_roi": 39.0
+        },
+        {
+          "sire": "Justify(米)",
+          "total": 12,
+          "horses": 8,
+          "wins": 2,
+          "top3": 4,
+          "win_rate": 16.7,
+          "top3_rate": 33.3,
+          "win_roi": 247.0
+        },
+        {
+          "sire": "キズナ",
+          "total": 163,
+          "horses": 85,
+          "wins": 27,
+          "top3": 63,
+          "win_rate": 16.6,
+          "top3_rate": 38.7,
+          "win_roi": 152.0
+        },
+        {
+          "sire": "クリソベリル",
+          "total": 26,
+          "horses": 20,
+          "wins": 4,
+          "top3": 7,
+          "win_rate": 15.4,
+          "top3_rate": 26.9,
+          "win_roi": 49.0
+        },
+        {
+          "sire": "モズアスコット",
+          "total": 26,
+          "horses": 16,
+          "wins": 4,
+          "top3": 9,
+          "win_rate": 15.4,
+          "top3_rate": 34.6,
+          "win_roi": 249.0
+        },
+        {
+          "sire": "ミッキーアイル",
+          "total": 40,
+          "horses": 23,
+          "wins": 6,
+          "top3": 16,
+          "win_rate": 15.0,
+          "top3_rate": 40.0,
+          "win_roi": 69.0
+        },
+        {
+          "sire": "ルヴァンスレーヴ",
+          "total": 82,
+          "horses": 44,
+          "wins": 12,
+          "top3": 34,
+          "win_rate": 14.6,
+          "top3_rate": 41.5,
+          "win_roi": 133.0
+        },
+        {
+          "sire": "シュヴァルグラン",
+          "total": 14,
+          "horses": 9,
+          "wins": 2,
+          "top3": 4,
+          "win_rate": 14.3,
+          "top3_rate": 28.6,
+          "win_roi": 364.0
+        },
+        {
+          "sire": "パイロPyro(米)",
+          "total": 77,
+          "horses": 38,
+          "wins": 11,
+          "top3": 24,
+          "win_rate": 14.3,
+          "top3_rate": 31.2,
+          "win_roi": 234.0
+        },
+        {
+          "sire": "サンダースノーThunder Snow(愛)",
+          "total": 57,
+          "horses": 35,
+          "wins": 8,
+          "top3": 13,
+          "win_rate": 14.0,
+          "top3_rate": 22.8,
+          "win_roi": 310.0
+        }
+      ],
+      "check_card": {
+        "condition": "good",
+        "tips": [
+          "✅ 枠: フラット（6枠がやや有利）",
+          "✅ 脚質: 先行優勢（前残り傾向）",
+          "✅ 上がり最速馬の勝率: 44.3%",
+          "✅ 種牡馬: ナダルNadal(米)、ロードカナロア、モーニン"
+        ],
+        "frame_summary": "フラット",
+        "style_summary": "先行優勢",
+        "sire_summary": "ナダルNadal(米)"
+      }
+    },
+    "wet": {
+      "total_runners": 2222,
+      "total_races": 172,
+      "frame_bias": {
+        "1": {
+          "total": 223,
+          "wins": 17,
+          "win_rate": 7.6,
+          "top2_rate": 13.0,
+          "top3_rate": 18.8,
+          "win_roi": 3.0
+        },
+        "2": {
+          "total": 232,
+          "wins": 24,
+          "win_rate": 10.3,
+          "top2_rate": 15.1,
+          "top3_rate": 25.0,
+          "win_roi": 6.0
+        },
+        "3": {
+          "total": 249,
+          "wins": 16,
+          "win_rate": 6.4,
+          "top2_rate": 16.1,
+          "top3_rate": 24.9,
+          "win_roi": 65.0
+        },
+        "4": {
+          "total": 269,
+          "wins": 23,
+          "win_rate": 8.6,
+          "top2_rate": 14.1,
+          "top3_rate": 20.8,
+          "win_roi": 28.0
+        },
+        "5": {
+          "total": 289,
+          "wins": 28,
+          "win_rate": 9.7,
+          "top2_rate": 17.0,
+          "top3_rate": 24.9,
+          "win_roi": 47.0
+        },
+        "6": {
+          "total": 301,
+          "wins": 30,
+          "win_rate": 10.0,
+          "top2_rate": 18.9,
+          "top3_rate": 25.9,
+          "win_roi": 14.0
+        },
+        "7": {
+          "total": 327,
+          "wins": 12,
+          "win_rate": 3.7,
+          "top2_rate": 11.6,
+          "top3_rate": 19.6,
+          "win_roi": 61.0
+        },
+        "8": {
+          "total": 332,
+          "wins": 22,
+          "win_rate": 6.6,
+          "top2_rate": 17.5,
+          "top3_rate": 25.3,
+          "win_roi": 7.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 1662,
+          "wins": 134,
+          "win_rate": 8.1,
+          "top3_rate": 24.0,
+          "win_roi": 22.0
+        },
+        "先行": {
+          "total": 184,
+          "wins": 21,
+          "win_rate": 11.4,
+          "top3_rate": 32.6,
+          "win_roi": 99.0
+        },
+        "差し": {
+          "total": 191,
+          "wins": 14,
+          "win_rate": 7.3,
+          "top3_rate": 16.8,
+          "win_roi": 56.0
+        },
+        "追込": {
+          "total": 185,
+          "wins": 3,
+          "win_rate": 1.6,
+          "top3_rate": 13.5,
+          "win_roi": 6.0
+        },
+        "_front_remaining_score": 65
+      },
+      "pace": {
+        "fastest_last_3f": {
+          "total": 52,
+          "win_rate": 40.4,
+          "top3_rate": 76.9
+        },
+        "top3_last_3f": {
+          "total": 152,
+          "win_rate": 27.0,
+          "top3_rate": 67.8
+        },
+        "avg_last_3f": 39.6
+      },
+      "meet_timing": {
+        "by_meet": {
+          "1回京都": {
+            "total_runners": 564,
+            "total_races": 45,
+            "inner_win_rate": 8.2,
+            "outer_win_rate": 7.8
+          },
+          "2回京都": {
+            "total_runners": 817,
+            "total_races": 63,
+            "inner_win_rate": 8.9,
+            "outer_win_rate": 6.8
+          },
+          "3回京都": {
+            "total_runners": 280,
+            "total_races": 20,
+            "inner_win_rate": 7.9,
+            "outer_win_rate": 6.5
+          },
+          "4回京都": {
+            "total_runners": 277,
+            "total_races": 21,
+            "inner_win_rate": 6.5,
+            "outer_win_rate": 8.4
+          },
+          "5回京都": {
+            "total_runners": 247,
+            "total_races": 20,
+            "inner_win_rate": 7.5,
+            "outer_win_rate": 8.5
+          },
+          "7回京都": {
+            "total_runners": 37,
+            "total_races": 3,
+            "inner_win_rate": 14.3,
+            "outer_win_rate": 4.3
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 1095,
+            "total_races": 86,
+            "inner_win_rate": 7.9,
+            "outer_win_rate": 7.8,
+            "front_runner_wins": 77,
+            "closer_wins": 9
+          },
+          "後半": {
+            "total_runners": 1127,
+            "total_races": 86,
+            "inner_win_rate": 8.5,
+            "outer_win_rate": 6.9,
+            "front_runner_wins": 78,
+            "closer_wins": 8
+          }
+        }
+      },
+      "sire_ranking": [
+        {
+          "sire": "シニスターミニスターSinister Minister(米)",
+          "total": 25,
+          "horses": 20,
+          "wins": 7,
+          "top3": 12,
+          "win_rate": 28.0,
+          "top3_rate": 48.0,
+          "win_roi": 54.0
+        },
+        {
+          "sire": "ヘニーヒューズHenny Hughes(米)",
+          "total": 11,
+          "horses": 9,
+          "wins": 2,
+          "top3": 4,
+          "win_rate": 18.2,
+          "top3_rate": 36.4,
+          "win_roi": 114.0
+        },
+        {
+          "sire": "マクフィMakfi(英)",
+          "total": 12,
+          "horses": 8,
+          "wins": 2,
+          "top3": 3,
+          "win_rate": 16.7,
+          "top3_rate": 25.0,
+          "win_roi": 102.0
+        },
+        {
+          "sire": "ドレフォンDrefong(米)",
+          "total": 25,
+          "horses": 23,
+          "wins": 4,
+          "top3": 9,
+          "win_rate": 16.0,
+          "top3_rate": 36.0,
+          "win_roi": 170.0
+        },
+        {
+          "sire": "マジェスティックウォリアーMajestic Warrior(米)",
+          "total": 26,
+          "horses": 22,
+          "wins": 4,
+          "top3": 10,
+          "win_rate": 15.4,
+          "top3_rate": 38.5,
+          "win_roi": 58.0
+        },
+        {
+          "sire": "ルヴァンスレーヴ",
+          "total": 15,
+          "horses": 13,
+          "wins": 2,
+          "top3": 6,
+          "win_rate": 13.3,
+          "top3_rate": 40.0,
+          "win_roi": 27.0
+        },
+        {
+          "sire": "エピファネイア",
+          "total": 10,
+          "horses": 8,
+          "wins": 1,
+          "top3": 3,
+          "win_rate": 10.0,
+          "top3_rate": 30.0,
+          "win_roi": 60.0
+        },
+        {
+          "sire": "カレンブラックヒル",
+          "total": 10,
+          "horses": 8,
+          "wins": 1,
+          "top3": 4,
+          "win_rate": 10.0,
+          "top3_rate": 40.0,
+          "win_roi": 18.0
+        },
+        {
+          "sire": "デクラレーションオブウォー",
+          "total": 10,
+          "horses": 9,
+          "wins": 1,
+          "top3": 3,
+          "win_rate": 10.0,
+          "top3_rate": 30.0,
+          "win_roi": 89.0
+        },
+        {
+          "sire": "サンダースノーThunder Snow(愛)",
+          "total": 11,
+          "horses": 11,
+          "wins": 1,
+          "top3": 3,
+          "win_rate": 9.1,
+          "top3_rate": 27.3,
+          "win_roi": 58.0
+        },
+        {
+          "sire": "ホッコータルマエ",
+          "total": 22,
+          "horses": 17,
+          "wins": 2,
+          "top3": 4,
+          "win_rate": 9.1,
+          "top3_rate": 18.2,
+          "win_roi": 28.0
+        },
+        {
+          "sire": "オルフェーヴル",
+          "total": 12,
+          "horses": 12,
+          "wins": 1,
+          "top3": 3,
+          "win_rate": 8.3,
+          "top3_rate": 25.0,
+          "win_roi": 29.0
+        },
+        {
+          "sire": "パイロPyro(米)",
+          "total": 12,
+          "horses": 12,
+          "wins": 1,
+          "top3": 4,
+          "win_rate": 8.3,
+          "top3_rate": 33.3,
+          "win_roi": 25.0
+        },
+        {
+          "sire": "キズナ",
+          "total": 25,
+          "horses": 22,
+          "wins": 2,
+          "top3": 9,
+          "win_rate": 8.0,
+          "top3_rate": 36.0,
+          "win_roi": 248.0
+        },
+        {
+          "sire": "ドゥラメンテ",
+          "total": 13,
+          "horses": 12,
+          "wins": 1,
+          "top3": 3,
+          "win_rate": 7.7,
+          "top3_rate": 23.1,
+          "win_roi": 12.0
+        }
+      ],
+      "check_card": {
+        "condition": "wet",
+        "tips": [
+          "✅ 枠: フラット（2枠がやや有利）",
+          "✅ 脚質: 先行優勢（前残り傾向）",
+          "✅ 上がり最速馬の勝率: 40.4%",
+          "✅ 種牡馬: シニスターミニスターSinister Minister(米)、ヘニーヒューズHenny Hughes(米)、マクフィMakfi(英)"
+        ],
+        "frame_summary": "フラット",
+        "style_summary": "先行優勢",
+        "sire_summary": "シニスターミニスターSinister Minister(米)"
+      }
+    }
+  }
+}

@@ -44,9 +44,6 @@ next-env.d.ts
 data/posts-log.json
 data/post-queue.json
 data/community-templates.json
-data/raw/
 data/weekly/
-data/analyzed/
 data/learning-logs/
 data/feedback/
-data/tuning/

@@ -1,0 +1,247 @@
+{
+  "course": "中山",
+  "course_code": 6,
+  "surface": "ダート",
+  "distance": 2500,
+  "total_races": 10,
+  "total_runners": 134,
+  "period": "2016-2025",
+  "conditions": {
+    "good": {
+      "total_runners": 108,
+      "total_races": 8,
+      "frame_bias": {
+        "1": {
+          "total": 10,
+          "wins": 1,
+          "win_rate": 10.0,
+          "top2_rate": 10.0,
+          "top3_rate": 10.0,
+          "win_roi": 24.0
+        },
+        "2": {
+          "total": 11,
+          "wins": 1,
+          "win_rate": 9.1,
+          "top2_rate": 18.2,
+          "top3_rate": 36.4,
+          "win_roi": 0.0
+        },
+        "3": {
+          "total": 13,
+          "wins": 1,
+          "win_rate": 7.7,
+          "top2_rate": 7.7,
+          "top3_rate": 7.7,
+          "win_roi": 0.0
+        },
+        "4": {
+          "total": 13,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 7.7,
+          "top3_rate": 7.7,
+          "win_roi": 0.0
+        },
+        "5": {
+          "total": 13,
+          "wins": 1,
+          "win_rate": 7.7,
+          "top2_rate": 7.7,
+          "top3_rate": 23.1,
+          "win_roi": 0.0
+        },
+        "6": {
+          "total": 16,
+          "wins": 1,
+          "win_rate": 6.2,
+          "top2_rate": 6.2,
+          "top3_rate": 18.8,
+          "win_roi": 0.0
+        },
+        "7": {
+          "total": 16,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 25.0,
+          "top3_rate": 25.0,
+          "win_roi": 0.0
+        },
+        "8": {
+          "total": 16,
+          "wins": 3,
+          "win_rate": 18.8,
+          "top2_rate": 31.2,
+          "top3_rate": 43.8,
+          "win_roi": 0.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 96,
+          "wins": 8,
+          "win_rate": 8.3,
+          "top3_rate": 22.9,
+          "win_roi": 2.0
+        },
+        "先行": {
+          "total": 4,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 25.0,
+          "win_roi": 0.0
+        },
+        "差し": {
+          "total": 3,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 0.0,
+          "win_roi": 0.0
+        },
+        "追込": {
+          "total": 5,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 20.0,
+          "win_roi": 0.0
+        },
+        "_front_remaining_score": 100
+      },
+      "pace": {
+        "fastest_last_3f": {
+          "total": 1,
+          "win_rate": 0.0,
+          "top3_rate": 100.0
+        },
+        "top3_last_3f": {
+          "total": 3,
+          "win_rate": 33.3,
+          "top3_rate": 66.7
+        },
+        "avg_last_3f": 43.4
+      },
+      "meet_timing": {
+        "by_meet": {
+          "5回中山": {
+            "total_runners": 108,
+            "total_races": 8,
+            "inner_win_rate": 6.4,
+            "outer_win_rate": 8.2
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 52,
+            "total_races": 4,
+            "inner_win_rate": 4.5,
+            "outer_win_rate": 10.0,
+            "front_runner_wins": 4,
+            "closer_wins": 0
+          },
+          "後半": {
+            "total_runners": 56,
+            "total_races": 4,
+            "inner_win_rate": 8.0,
+            "outer_win_rate": 6.5,
+            "front_runner_wins": 4,
+            "closer_wins": 0
+          }
+        }
+      },
+      "check_card": {
+        "condition": "good",
+        "tips": [
+          "✅ 枠: 外枠有利（8枠が最有利）",
+          "✅ 脚質: 逃げ優勢（前残り傾向）"
+        ],
+        "frame_summary": "外枠有利",
+        "style_summary": "逃げ優勢"
+      }
+    },
+    "wet": {
+      "total_runners": 26,
+      "total_races": 2,
+      "frame_bias": {},
+      "running_style": {
+        "逃げ": {
+          "total": 14,
+          "wins": 1,
+          "win_rate": 7.1,
+          "top3_rate": 21.4,
+          "win_roi": 0.0
+        },
+        "先行": {
+          "total": 3,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 66.7,
+          "win_roi": 0.0
+        },
+        "差し": {
+          "total": 5,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 0.0,
+          "win_roi": 0.0
+        },
+        "追込": {
+          "total": 4,
+          "wins": 1,
+          "win_rate": 25.0,
+          "top3_rate": 25.0,
+          "win_roi": 300.0
+        },
+        "_front_remaining_score": 35
+      },
+      "pace": {
+        "fastest_last_3f": {
+          "total": 1,
+          "win_rate": 100.0,
+          "top3_rate": 100.0
+        },
+        "top3_last_3f": {
+          "total": 3,
+          "win_rate": 33.3,
+          "top3_rate": 66.7
+        },
+        "avg_last_3f": 42.1
+      },
+      "meet_timing": {
+        "by_meet": {
+          "5回中山": {
+            "total_runners": 26,
+            "total_races": 2,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 12.5
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 14,
+            "total_races": 1,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 12.5,
+            "front_runner_wins": 0,
+            "closer_wins": 1
+          },
+          "後半": {
+            "total_runners": 12,
+            "total_races": 1,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 12.5,
+            "front_runner_wins": 1,
+            "closer_wins": 0
+          }
+        }
+      },
+      "check_card": {
+        "condition": "wet",
+        "tips": [
+          "✅ 脚質: 追込優勢（差し有利）",
+          "✅ 上がり最速馬の勝率: 100.0%"
+        ],
+        "style_summary": "追込優勢"
+      }
+    }
+  }
+}

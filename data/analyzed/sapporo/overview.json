@@ -1,0 +1,20 @@
+{
+  "course": "札幌",
+  "course_code": 1,
+  "total_distances_analyzed": 8,
+  "distances": {
+    "turf": [
+      1200,
+      1500,
+      1800,
+      2000,
+      2600
+    ],
+    "dirt": [
+      1000,
+      1700,
+      2400
+    ]
+  },
+  "data_period": "20240106.0 ~ 20260315.0"
+}

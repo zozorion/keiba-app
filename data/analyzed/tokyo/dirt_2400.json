@@ -1,0 +1,54 @@
+{
+  "course": "東京",
+  "course_code": 5,
+  "surface": "ダート",
+  "distance": 2400,
+  "total_races": 2,
+  "total_runners": 31,
+  "period": "2016-2017",
+  "conditions": {
+    "good": {
+      "total_runners": 31,
+      "total_races": 2,
+      "frame_bias": {},
+      "running_style": {
+        "逃げ": {
+          "total": 31,
+          "wins": 2,
+          "win_rate": 6.5,
+          "top3_rate": 19.4,
+          "win_roi": 0.0
+        },
+        "_front_remaining_score": 50
+      },
+      "pace": {},
+      "meet_timing": {
+        "by_meet": {
+          "1回東京": {
+            "total_runners": 31,
+            "total_races": 2,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 12.5
+          }
+        },
+        "by_half": {
+          "後半": {
+            "total_runners": 31,
+            "total_races": 2,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 12.5,
+            "front_runner_wins": 2,
+            "closer_wins": 0
+          }
+        }
+      },
+      "check_card": {
+        "condition": "good",
+        "tips": [
+          "✅ 脚質: 逃げが最有利"
+        ],
+        "style_summary": "逃げ優勢"
+      }
+    }
+  }
+}

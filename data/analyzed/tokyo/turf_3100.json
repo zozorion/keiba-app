@@ -1,0 +1,174 @@
+{
+  "course": "東京",
+  "course_code": 5,
+  "surface": "芝",
+  "distance": 3100,
+  "total_races": 9,
+  "total_runners": 107,
+  "period": "2016-2025",
+  "conditions": {
+    "good": {
+      "total_runners": 107,
+      "total_races": 9,
+      "frame_bias": {
+        "1": {
+          "total": 9,
+          "wins": 1,
+          "win_rate": 11.1,
+          "top2_rate": 22.2,
+          "top3_rate": 22.2,
+          "win_roi": 0.0
+        },
+        "2": {
+          "total": 9,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 0.0,
+          "top3_rate": 22.2,
+          "win_roi": 0.0
+        },
+        "3": {
+          "total": 13,
+          "wins": 1,
+          "win_rate": 7.7,
+          "top2_rate": 15.4,
+          "top3_rate": 30.8,
+          "win_roi": 0.0
+        },
+        "4": {
+          "total": 14,
+          "wins": 1,
+          "win_rate": 7.1,
+          "top2_rate": 14.3,
+          "top3_rate": 28.6,
+          "win_roi": 0.0
+        },
+        "5": {
+          "total": 15,
+          "wins": 1,
+          "win_rate": 6.7,
+          "top2_rate": 13.3,
+          "top3_rate": 13.3,
+          "win_roi": 0.0
+        },
+        "6": {
+          "total": 14,
+          "wins": 1,
+          "win_rate": 7.1,
+          "top2_rate": 21.4,
+          "top3_rate": 35.7,
+          "win_roi": 0.0
+        },
+        "7": {
+          "total": 17,
+          "wins": 2,
+          "win_rate": 11.8,
+          "top2_rate": 23.5,
+          "top3_rate": 23.5,
+          "win_roi": 0.0
+        },
+        "8": {
+          "total": 16,
+          "wins": 2,
+          "win_rate": 12.5,
+          "top2_rate": 18.8,
+          "top3_rate": 25.0,
+          "win_roi": 46.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 97,
+          "wins": 8,
+          "win_rate": 8.2,
+          "top3_rate": 25.8,
+          "win_roi": 0.0
+        },
+        "先行": {
+          "total": 4,
+          "wins": 1,
+          "win_rate": 25.0,
+          "top3_rate": 50.0,
+          "win_roi": 185.0
+        },
+        "追込": {
+          "total": 4,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 0.0,
+          "win_roi": 0.0
+        },
+        "_front_remaining_score": 100
+      },
+      "pace": {
+        "fastest_last_3f": {
+          "total": 3,
+          "win_rate": 33.3,
+          "top3_rate": 100.0
+        },
+        "top3_last_3f": {
+          "total": 3,
+          "win_rate": 33.3,
+          "top3_rate": 100.0
+        },
+        "avg_last_3f": 13.7
+      },
+      "meet_timing": {
+        "by_meet": {
+          "1回東京": {
+            "total_runners": 28,
+            "total_races": 2,
+            "inner_win_rate": 8.3,
+            "outer_win_rate": 6.2
+          },
+          "2回東京": {
+            "total_runners": 12,
+            "total_races": 1,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 14.3
+          },
+          "3回東京": {
+            "total_runners": 56,
+            "total_races": 5,
+            "inner_win_rate": 8.3,
+            "outer_win_rate": 9.4
+          },
+          "4回東京": {
+            "total_runners": 11,
+            "total_races": 1,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 14.3
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 79,
+            "total_races": 7,
+            "inner_win_rate": 6.1,
+            "outer_win_rate": 10.9,
+            "front_runner_wins": 7,
+            "closer_wins": 0
+          },
+          "後半": {
+            "total_runners": 28,
+            "total_races": 2,
+            "inner_win_rate": 8.3,
+            "outer_win_rate": 6.2,
+            "front_runner_wins": 2,
+            "closer_wins": 0
+          }
+        }
+      },
+      "check_card": {
+        "condition": "good",
+        "tips": [
+          "✅ 枠: 外枠有利（8枠が最有利）",
+          "✅ 脚質: 先行優勢（前残り傾向）",
+          "✅ 上がり最速馬の勝率: 33.3%"
+        ],
+        "frame_summary": "外枠有利",
+        "style_summary": "先行優勢"
+      }
+    }
+  }
+}

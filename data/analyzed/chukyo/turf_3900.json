@@ -1,0 +1,54 @@
+{
+  "course": "中京",
+  "course_code": 7,
+  "surface": "芝",
+  "distance": 3900,
+  "total_races": 2,
+  "total_runners": 20,
+  "period": "2021-2022",
+  "conditions": {
+    "good": {
+      "total_runners": 20,
+      "total_races": 2,
+      "frame_bias": {},
+      "running_style": {
+        "逃げ": {
+          "total": 20,
+          "wins": 2,
+          "win_rate": 10.0,
+          "top3_rate": 30.0,
+          "win_roi": 0.0
+        },
+        "_front_remaining_score": 50
+      },
+      "pace": {},
+      "meet_timing": {
+        "by_meet": {
+          "3回中京": {
+            "total_runners": 20,
+            "total_races": 2,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 16.7
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 20,
+            "total_races": 2,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 16.7,
+            "front_runner_wins": 2,
+            "closer_wins": 0
+          }
+        }
+      },
+      "check_card": {
+        "condition": "good",
+        "tips": [
+          "✅ 脚質: 逃げが最有利"
+        ],
+        "style_summary": "逃げ優勢"
+      }
+    }
+  }
+}

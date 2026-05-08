@@ -1,0 +1,263 @@
+{
+  "course": "新潟",
+  "course_code": 4,
+  "surface": "芝",
+  "distance": 3290,
+  "total_races": 14,
+  "total_runners": 186,
+  "period": "2016-2025",
+  "conditions": {
+    "good": {
+      "total_runners": 148,
+      "total_races": 11,
+      "frame_bias": {
+        "1": {
+          "total": 11,
+          "wins": 2,
+          "win_rate": 18.2,
+          "top2_rate": 18.2,
+          "top3_rate": 27.3,
+          "win_roi": 24.0
+        },
+        "2": {
+          "total": 11,
+          "wins": 3,
+          "win_rate": 27.3,
+          "top2_rate": 27.3,
+          "top3_rate": 27.3,
+          "win_roi": 0.0
+        },
+        "3": {
+          "total": 21,
+          "wins": 2,
+          "win_rate": 9.5,
+          "top2_rate": 19.0,
+          "top3_rate": 28.6,
+          "win_roi": 44.0
+        },
+        "4": {
+          "total": 21,
+          "wins": 3,
+          "win_rate": 14.3,
+          "top2_rate": 19.0,
+          "top3_rate": 28.6,
+          "win_roi": 0.0
+        },
+        "5": {
+          "total": 20,
+          "wins": 1,
+          "win_rate": 5.0,
+          "top2_rate": 15.0,
+          "top3_rate": 20.0,
+          "win_roi": 0.0
+        },
+        "6": {
+          "total": 22,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 9.1,
+          "top3_rate": 27.3,
+          "win_roi": 0.0
+        },
+        "7": {
+          "total": 21,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 9.5,
+          "top3_rate": 14.3,
+          "win_roi": 0.0
+        },
+        "8": {
+          "total": 21,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 9.5,
+          "top3_rate": 14.3,
+          "win_roi": 0.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 124,
+          "wins": 9,
+          "win_rate": 7.3,
+          "top3_rate": 23.4,
+          "win_roi": 0.0
+        },
+        "先行": {
+          "total": 7,
+          "wins": 1,
+          "win_rate": 14.3,
+          "top3_rate": 42.9,
+          "win_roi": 131.0
+        },
+        "差し": {
+          "total": 9,
+          "wins": 1,
+          "win_rate": 11.1,
+          "top3_rate": 22.2,
+          "win_roi": 29.0
+        },
+        "追込": {
+          "total": 8,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 0.0,
+          "win_roi": 0.0
+        },
+        "_front_remaining_score": 56
+      },
+      "pace": {
+        "fastest_last_3f": {
+          "total": 4,
+          "win_rate": 50.0,
+          "top3_rate": 100.0
+        },
+        "top3_last_3f": {
+          "total": 16,
+          "win_rate": 12.5,
+          "top3_rate": 43.8
+        },
+        "avg_last_3f": 13.5
+      },
+      "meet_timing": {
+        "by_meet": {
+          "1回新潟": {
+            "total_runners": 135,
+            "total_races": 10,
+            "inner_win_rate": 15.5,
+            "outer_win_rate": 1.3
+          },
+          "2回新潟": {
+            "total_runners": 13,
+            "total_races": 1,
+            "inner_win_rate": 16.7,
+            "outer_win_rate": 0.0
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 25,
+            "total_races": 2,
+            "inner_win_rate": 16.7,
+            "outer_win_rate": 0.0,
+            "front_runner_wins": 2,
+            "closer_wins": 0
+          },
+          "後半": {
+            "total_runners": 123,
+            "total_races": 9,
+            "inner_win_rate": 15.4,
+            "outer_win_rate": 1.4,
+            "front_runner_wins": 8,
+            "closer_wins": 1
+          }
+        }
+      },
+      "check_card": {
+        "condition": "good",
+        "tips": [
+          "✅ 枠: 内枠有利（2枠が最有利）",
+          "✅ 脚質: 先行が最有利",
+          "✅ 上がり最速馬の勝率: 50.0%"
+        ],
+        "frame_summary": "内枠有利",
+        "style_summary": "先行優勢"
+      }
+    },
+    "wet": {
+      "total_runners": 38,
+      "total_races": 3,
+      "frame_bias": {
+        "4": {
+          "total": 5,
+          "wins": 1,
+          "win_rate": 20.0,
+          "top2_rate": 20.0,
+          "top3_rate": 20.0,
+          "win_roi": 0.0
+        },
+        "5": {
+          "total": 6,
+          "wins": 1,
+          "win_rate": 16.7,
+          "top2_rate": 33.3,
+          "top3_rate": 33.3,
+          "win_roi": 0.0
+        },
+        "6": {
+          "total": 6,
+          "wins": 1,
+          "win_rate": 16.7,
+          "top2_rate": 50.0,
+          "top3_rate": 50.0,
+          "win_roi": 0.0
+        },
+        "7": {
+          "total": 6,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 0.0,
+          "top3_rate": 33.3,
+          "win_roi": 0.0
+        },
+        "8": {
+          "total": 6,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 0.0,
+          "top3_rate": 16.7,
+          "win_roi": 0.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 38,
+          "wins": 3,
+          "win_rate": 7.9,
+          "top3_rate": 23.7,
+          "win_roi": 0.0
+        },
+        "_front_remaining_score": 50
+      },
+      "pace": {},
+      "meet_timing": {
+        "by_meet": {
+          "1回新潟": {
+            "total_runners": 38,
+            "total_races": 3,
+            "inner_win_rate": 7.1,
+            "outer_win_rate": 8.3
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 24,
+            "total_races": 2,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 12.5,
+            "front_runner_wins": 2,
+            "closer_wins": 0
+          },
+          "後半": {
+            "total_runners": 14,
+            "total_races": 1,
+            "inner_win_rate": 16.7,
+            "outer_win_rate": 0.0,
+            "front_runner_wins": 1,
+            "closer_wins": 0
+          }
+        }
+      },
+      "check_card": {
+        "condition": "wet",
+        "tips": [
+          "✅ 枠: 外枠有利（4枠が最有利）",
+          "✅ 脚質: 逃げが最有利"
+        ],
+        "frame_summary": "外枠有利",
+        "style_summary": "逃げ優勢"
+      }
+    }
+  }
+}

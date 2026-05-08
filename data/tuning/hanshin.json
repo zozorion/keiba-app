@@ -1,0 +1,27 @@
+{
+  "venue": "hanshin",
+  "venueJa": "阪神",
+  "version": 3,
+  "lastLearnDate": "2026-04-19",
+  "weeksLearned": 6,
+  "totalRaces": 72,
+  "weights": {
+    "sireMaxPoints": 16,
+    "sireReliabilityThresholds": [
+      5,
+      10,
+      20,
+      30
+    ],
+    "jockeyMultiplier": 1,
+    "trainerMultiplier": 1.5,
+    "frameMaxPoints": 8,
+    "widePartnerCount": 5
+  },
+  "performance": {
+    "pivotTop3Rate": 38,
+    "wideHitRate": 39,
+    "wideROI": 64,
+    "tanshoROI": 27
+  }
+}

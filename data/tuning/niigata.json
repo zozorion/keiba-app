@@ -1,0 +1,27 @@
+{
+  "venue": "niigata",
+  "venueJa": "新潟",
+  "version": 3,
+  "lastLearnDate": "2026-05-03",
+  "weeksLearned": 2,
+  "totalRaces": 24,
+  "weights": {
+    "sireMaxPoints": 16,
+    "sireReliabilityThresholds": [
+      5,
+      10,
+      20,
+      30
+    ],
+    "jockeyMultiplier": 0.5,
+    "trainerMultiplier": 0.5,
+    "frameMaxPoints": 8,
+    "widePartnerCount": 6
+  },
+  "performance": {
+    "pivotTop3Rate": 29,
+    "wideHitRate": 29,
+    "wideROI": 52,
+    "tanshoROI": 0
+  }
+}

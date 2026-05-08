@@ -1,0 +1,299 @@
+{
+  "course": "阪神",
+  "course_code": 9,
+  "surface": "芝",
+  "distance": 3110,
+  "total_races": 23,
+  "total_runners": 244,
+  "period": "2016-2025",
+  "conditions": {
+    "good": {
+      "total_runners": 200,
+      "total_races": 19,
+      "frame_bias": {
+        "1": {
+          "total": 19,
+          "wins": 1,
+          "win_rate": 5.3,
+          "top2_rate": 21.1,
+          "top3_rate": 42.1,
+          "win_roi": 0.0
+        },
+        "2": {
+          "total": 19,
+          "wins": 1,
+          "win_rate": 5.3,
+          "top2_rate": 15.8,
+          "top3_rate": 26.3,
+          "win_roi": 96.0
+        },
+        "3": {
+          "total": 23,
+          "wins": 4,
+          "win_rate": 17.4,
+          "top2_rate": 30.4,
+          "top3_rate": 39.1,
+          "win_roi": 0.0
+        },
+        "4": {
+          "total": 24,
+          "wins": 4,
+          "win_rate": 16.7,
+          "top2_rate": 16.7,
+          "top3_rate": 33.3,
+          "win_roi": 23.0
+        },
+        "5": {
+          "total": 25,
+          "wins": 3,
+          "win_rate": 12.0,
+          "top2_rate": 12.0,
+          "top3_rate": 20.0,
+          "win_roi": 0.0
+        },
+        "6": {
+          "total": 29,
+          "wins": 2,
+          "win_rate": 6.9,
+          "top2_rate": 17.2,
+          "top3_rate": 20.7,
+          "win_roi": 0.0
+        },
+        "7": {
+          "total": 31,
+          "wins": 3,
+          "win_rate": 9.7,
+          "top2_rate": 22.6,
+          "top3_rate": 25.8,
+          "win_roi": 0.0
+        },
+        "8": {
+          "total": 30,
+          "wins": 1,
+          "win_rate": 3.3,
+          "top2_rate": 16.7,
+          "top3_rate": 26.7,
+          "win_roi": 0.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 179,
+          "wins": 18,
+          "win_rate": 10.1,
+          "top3_rate": 30.2,
+          "win_roi": 10.0
+        },
+        "先行": {
+          "total": 5,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 40.0,
+          "win_roi": 0.0
+        },
+        "差し": {
+          "total": 8,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top3_rate": 0.0,
+          "win_roi": 0.0
+        },
+        "追込": {
+          "total": 8,
+          "wins": 1,
+          "win_rate": 12.5,
+          "top3_rate": 12.5,
+          "win_roi": 70.0
+        },
+        "_front_remaining_score": 61
+      },
+      "pace": {
+        "fastest_last_3f": {
+          "total": 3,
+          "win_rate": 66.7,
+          "top3_rate": 100.0
+        },
+        "top3_last_3f": {
+          "total": 14,
+          "win_rate": 14.3,
+          "top3_rate": 42.9
+        },
+        "avg_last_3f": 13.8
+      },
+      "meet_timing": {
+        "by_meet": {
+          "2回阪神": {
+            "total_runners": 24,
+            "total_races": 2,
+            "inner_win_rate": 22.2,
+            "outer_win_rate": 0.0
+          },
+          "3回阪神": {
+            "total_runners": 97,
+            "total_races": 10,
+            "inner_win_rate": 7.1,
+            "outer_win_rate": 12.7
+          },
+          "4回阪神": {
+            "total_runners": 17,
+            "total_races": 2,
+            "inner_win_rate": 12.5,
+            "outer_win_rate": 11.1
+          },
+          "5回阪神": {
+            "total_runners": 25,
+            "total_races": 2,
+            "inner_win_rate": 20.0,
+            "outer_win_rate": 0.0
+          },
+          "6回阪神": {
+            "total_runners": 37,
+            "total_races": 3,
+            "inner_win_rate": 12.5,
+            "outer_win_rate": 4.8
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 143,
+            "total_races": 14,
+            "inner_win_rate": 9.7,
+            "outer_win_rate": 9.9,
+            "front_runner_wins": 14,
+            "closer_wins": 0
+          },
+          "後半": {
+            "total_runners": 57,
+            "total_races": 5,
+            "inner_win_rate": 17.4,
+            "outer_win_rate": 2.9,
+            "front_runner_wins": 4,
+            "closer_wins": 1
+          }
+        }
+      },
+      "check_card": {
+        "condition": "good",
+        "tips": [
+          "✅ 枠: 内枠有利（3枠が最有利）",
+          "✅ 脚質: 追込優勢（前残り傾向）",
+          "✅ 上がり最速馬の勝率: 66.7%"
+        ],
+        "frame_summary": "内枠有利",
+        "style_summary": "追込優勢"
+      }
+    },
+    "wet": {
+      "total_runners": 44,
+      "total_races": 4,
+      "frame_bias": {
+        "4": {
+          "total": 5,
+          "wins": 1,
+          "win_rate": 20.0,
+          "top2_rate": 20.0,
+          "top3_rate": 40.0,
+          "win_roi": 0.0
+        },
+        "5": {
+          "total": 6,
+          "wins": 1,
+          "win_rate": 16.7,
+          "top2_rate": 33.3,
+          "top3_rate": 66.7,
+          "win_roi": 0.0
+        },
+        "6": {
+          "total": 6,
+          "wins": 1,
+          "win_rate": 16.7,
+          "top2_rate": 33.3,
+          "top3_rate": 33.3,
+          "win_roi": 0.0
+        },
+        "7": {
+          "total": 7,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 0.0,
+          "top3_rate": 14.3,
+          "win_roi": 0.0
+        },
+        "8": {
+          "total": 8,
+          "wins": 0,
+          "win_rate": 0.0,
+          "top2_rate": 0.0,
+          "top3_rate": 0.0,
+          "win_roi": 0.0
+        }
+      },
+      "running_style": {
+        "逃げ": {
+          "total": 44,
+          "wins": 4,
+          "win_rate": 9.1,
+          "top3_rate": 27.3,
+          "win_roi": 0.0
+        },
+        "_front_remaining_score": 50
+      },
+      "pace": {},
+      "meet_timing": {
+        "by_meet": {
+          "1回阪神": {
+            "total_runners": 10,
+            "total_races": 1,
+            "inner_win_rate": 25.0,
+            "outer_win_rate": 0.0
+          },
+          "2回阪神": {
+            "total_runners": 11,
+            "total_races": 1,
+            "inner_win_rate": 33.3,
+            "outer_win_rate": 0.0
+          },
+          "5回阪神": {
+            "total_runners": 13,
+            "total_races": 1,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 14.3
+          },
+          "6回阪神": {
+            "total_runners": 10,
+            "total_races": 1,
+            "inner_win_rate": 0.0,
+            "outer_win_rate": 16.7
+          }
+        },
+        "by_half": {
+          "前半": {
+            "total_runners": 11,
+            "total_races": 1,
+            "inner_win_rate": 33.3,
+            "outer_win_rate": 0.0,
+            "front_runner_wins": 1,
+            "closer_wins": 0
+          },
+          "後半": {
+            "total_runners": 33,
+            "total_races": 3,
+            "inner_win_rate": 7.1,
+            "outer_win_rate": 10.5,
+            "front_runner_wins": 3,
+            "closer_wins": 0
+          }
+        }
+      },
+      "check_card": {
+        "condition": "wet",
+        "tips": [
+          "✅ 枠: 外枠有利（4枠が最有利）",
+          "✅ 脚質: 逃げが最有利"
+        ],
+        "frame_summary": "外枠有利",
+        "style_summary": "逃げ優勢"
+      }
+    }
+  }
+}

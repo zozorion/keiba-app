@@ -1,0 +1,27 @@
+{
+  "venue": "fukushima",
+  "venueJa": "福島",
+  "version": 3,
+  "lastLearnDate": "2026-04-26",
+  "weeksLearned": 6,
+  "totalRaces": 72,
+  "weights": {
+    "sireMaxPoints": 16,
+    "sireReliabilityThresholds": [
+      5,
+      10,
+      20,
+      30
+    ],
+    "jockeyMultiplier": 0.5,
+    "trainerMultiplier": 0.5,
+    "frameMaxPoints": 8,
+    "widePartnerCount": 6
+  },
+  "performance": {
+    "pivotTop3Rate": 17,
+    "wideHitRate": 12,
+    "wideROI": 39,
+    "tanshoROI": 182
+  }
+}
