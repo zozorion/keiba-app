@@ -191,12 +191,38 @@ function scoreFrame(
 }
 
 /**
+ * 名前正規化: 接頭マーク除去 + 全角英数字記号→半角 + 空白除去
+ * netkeiba出走表は "戸崎 圭太" / "Ｃ．ルメール" / "▲佐藤 翔馬" など
+ * のフォーマットで提供されるため、マップキー（苗字のみ）と照合する前に正規化する。
+ */
+function normalizeName(name: string): string {
+  let n = name.replace(/[△▲☆◇★]/g, '');
+  n = n.replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  n = n.replace(/．/g, '.');
+  n = n.replace(/[\s　]/g, '');
+  return n;
+}
+
+/**
+ * スコアマップ参照: 正規化名に対し最長一致するキーのスコアを返す。
+ * 部分一致のため "戸崎 圭太" → "戸崎圭" / "Ｃ．ルメール" → "ルメール" が拾える。
+ */
+function lookupNameScore(name: string, scoreMap: Record<string, number>): number {
+  const normalized = normalizeName(name);
+  if (normalized in scoreMap) return scoreMap[normalized];
+  let bestKey = '';
+  for (const key of Object.keys(scoreMap)) {
+    if (normalized.includes(key) && key.length > bestKey.length) bestKey = key;
+  }
+  return bestKey ? scoreMap[bestKey] : 0;
+}
+
+/**
  * 騎手スコアリング（v3: 最大3pt）
  */
 function scoreJockey(jockeyName: string, multiplier: number = 1.0): { points: number; reasons: ScoreReason[] } {
   const reasons: ScoreReason[] = [];
-  const cleanName = jockeyName.replace(/[△▲☆◇★]/g, '');
-  const raw = JOCKEY_SCORES[cleanName] ?? 0;
+  const raw = lookupNameScore(jockeyName, JOCKEY_SCORES);
   const js = Math.round(raw * multiplier);
 
   if (js >= 2) {
@@ -219,7 +245,7 @@ function scoreJockey(jockeyName: string, multiplier: number = 1.0): { points: nu
  */
 function scoreTrainer(trainerName: string, multiplier: number = 1.0): { points: number; reasons: ScoreReason[] } {
   const reasons: ScoreReason[] = [];
-  const raw = TRAINER_SCORES[trainerName] ?? 0;
+  const raw = lookupNameScore(trainerName, TRAINER_SCORES);
   const ts = Math.round(raw * multiplier);
 
   if (ts >= 2) {

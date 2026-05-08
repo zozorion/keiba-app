@@ -2,81 +2,76 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-// デモ用のレース詳細データ
-function getSampleRaceDetail(id: string) {
-  return {
-    raceId: id,
-    raceName: "プリンシパルS",
-    venue: "東京",
-    raceNumber: 11,
-    surface: "芝",
-    distance: 2200,
-    condition: "良",
-    postTime: "15:25",
-    grade: "リステッド",
-    checkCard: {
-      tips: [
-        "枠: フラット（1枠がやや有利）",
-        "脚質: 差しが最有利",
-        "上がり最速馬の勝率: 40.9%",
-        "種牡馬: ドゥラメンテ、キタサンブラック",
-      ],
-    },
-    pivotHorse: {
-      num: 7,
-      name: "ジャスティンミラノ",
-      score: 89,
-      expectationScore: 82,
-      sire: "ドゥラメンテ",
-      jockey: "ルメール",
-      trainer: "友道",
-      reasons: [
-        { label: "種牡馬◎ 父ドゥラメンテ", points: 25, dataSource: "WR15.3% (72走)", category: "sire" },
-        { label: "騎手◎ ルメール", points: 14, dataSource: "リーディング上位", category: "jockey" },
-        { label: "厩舎◎ 友道", points: 10, dataSource: "重賞実績上位", category: "trainer" },
-        { label: "距離実績◎", points: 8, dataSource: "同距離 2勝/3走 WR66.7%", category: "distance" },
-        { label: "1枠◎", points: 8, dataSource: "枠WR10.3%", category: "frame" },
-      ],
-    },
-    allHorses: Array.from({ length: 15 }, (_, i) => ({
-      num: i + 1,
-      frame: Math.ceil((i + 1) / 2),
-      name: [
-        "レッドジェネシス", "コスモキュランダ", "エアスピネル", "サリエラ",
-        "タスティエーラ", "ソールオリエンス", "ジャスティンミラノ", "レガレイラ",
-        "ダノンベルーガ", "プラダリア", "ディープボンド", "シルヴァーソニック",
-        "アーバンシック", "サヴォーナ", "テーオーロイヤル"
-      ][i],
-      sex: i % 3 === 0 ? "牝4" : "牡4",
-      jockey: ["田辺", "横山武", "坂井", "川田", "松山", "横山和", "ルメール", "戸崎", "レーン", "池添", "武豊", "M.デムーロ", "菅原明", "三浦", "団野"][i],
-      trainer: ["国枝", "矢作", "堀", "友道", "手塚", "池江", "友道", "木村", "中内田", "友道", "須貝", "池江", "堀", "武井", "清水久"][i],
-      sire: ["ディープインパクト", "キタサンブラック", "キングカメハメハ", "ディープインパクト", "サトノクラウン", "キタサンブラック", "ドゥラメンテ", "レイデオロ", "ハーツクライ", "ディープインパクト", "キズナ", "ハービンジャー", "スワーヴリチャード", "ドゥラメンテ", "リオンディーズ"][i],
-      score: 89 - i * 4 + Math.floor(Math.random() * 8 - 4),
-      expectationScore: Math.max(30, 82 - i * 4 + Math.floor(Math.random() * 8 - 4)),
-      odds: (1.5 + i * 1.2 + Math.random() * 3).toFixed(1),
-      popularity: i + 1,
-      reasons: [
-        { label: i === 6 ? "種牡馬◎" : i < 3 ? "種牡馬○" : "—", points: i === 6 ? 25 : i < 3 ? 18 : 0, dataSource: "" },
-      ],
-      distanceRecord: i < 5 ? { runs: 3 + i, wins: 1, top3: 2, winRate: 20, top3Rate: 40 } : undefined,
-      courseRecord: i < 4 ? { runs: 2, wins: 1, top3: 1, winRate: 50, top3Rate: 50 } : undefined,
-      recentHistory: [
-        { date: 20260419, course: "中山", surface: "芝", distance: 2000, finish: i < 3 ? 1 : i + 1, last3f: 33.5 + Math.random(), condition: "良" },
-        { date: 20260322, course: "阪神", surface: "芝", distance: 2200, finish: Math.ceil(Math.random() * 5), last3f: 34.0 + Math.random(), condition: "稍重" },
-      ],
-    })),
-    recommendations: [
-      { type: "wide", label: "ワイド", combination: [7, 4], reason: "スコア上位2頭" },
-      { type: "umaren", label: "馬連", combination: [7, 4], reason: "スコア上位2頭の組み合わせ" },
-      { type: "sanrenpuku", label: "三連複BOX", combination: [7, 4, 5], reason: "スコア上位3頭のBOX" },
-      { type: "tansho", label: "単勝", combination: [7], reason: "スコア最上位" },
-    ],
-    expectationLevel: 82,
-    isGraded: true,
-    isHighConfidence: true,
-  };
+interface ScoreReason {
+  category?: string;
+  label: string;
+  points: number;
+  dataSource: string;
+}
+
+interface PivotHorse {
+  num: number;
+  name: string;
+  score: number;
+  expectationScore: number;
+  sire?: string;
+  jockey?: string;
+  trainer?: string;
+  reasons: ScoreReason[];
+}
+
+interface AllHorse {
+  num: number;
+  frame: number;
+  name: string;
+  sex: string;
+  jockey: string;
+  trainer: string;
+  sire?: string;
+  score: number;
+  expectationScore: number;
+  reasons: ScoreReason[];
+  odds?: number;
+  popularity?: number;
+  distanceRecord?: { runs: number; wins: number; top3: number; winRate: number; top3Rate: number };
+  courseRecord?: { runs: number; wins: number; top3: number; winRate: number; top3Rate: number };
+  recentHistory?: { date: number; course: string; surface: string; distance: number; finish: number; last3f: number; condition: string }[];
+}
+
+interface Recommendation {
+  type: string;
+  label: string;
+  combination: number[];
+  reason: string;
+}
+
+interface CheckCard {
+  condition?: string;
+  tips: string[];
+  frameSummary?: string;
+  styleSummary?: string;
+  sireSummary?: string;
+}
+
+interface RaceDetailData {
+  raceId: string;
+  raceName: string;
+  venue: string;
+  raceNumber: number;
+  surface: string;
+  distance: number;
+  condition: string;
+  postTime: string;
+  grade?: string;
+  checkCard: CheckCard;
+  pivotHorse: PivotHorse;
+  allHorses: AllHorse[];
+  recommendations: Recommendation[];
+  expectationLevel: number;
+  isGraded: boolean;
+  isHighConfidence: boolean;
 }
 
 function getScoreClass(score: number): string {
@@ -90,8 +85,60 @@ export default function RaceDetail() {
   const params = useParams();
   const raceId = params.id as string;
   const [showPostPreview, setShowPostPreview] = useState(false);
+  const [race, setRace] = useState<RaceDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const race = getSampleRaceDetail(raceId);
+  useEffect(() => {
+    if (!raceId) return;
+    setLoading(true);
+    fetch(`/api/race/${raceId}`)
+      .then(async res => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+        return json;
+      })
+      .then(json => {
+        setRace(json.prediction as RaceDetailData);
+        setError("");
+      })
+      .catch(e => {
+        setError(e.message || "読み込みエラー");
+        setRace(null);
+      })
+      .finally(() => setLoading(false));
+  }, [raceId]);
+
+  if (loading) {
+    return (
+      <main>
+        <Link href="/" className="btn btn-ghost" style={{ marginBottom: 16 }}>
+          ← ダッシュボードに戻る
+        </Link>
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p style={{ color: "var(--text-muted)" }}>レース情報を読み込み中...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !race) {
+    return (
+      <main>
+        <Link href="/" className="btn btn-ghost" style={{ marginBottom: 16 }}>
+          ← ダッシュボードに戻る
+        </Link>
+        <div className="empty-state">
+          <h3>📋 {error || "レースデータが見つかりません"}</h3>
+          <p style={{ marginTop: 8, color: "var(--text-muted)" }}>
+            該当の出走表データが取得できていない可能性があります。
+            <Link href="/settings" style={{ color: 'var(--primary)' }}>⚙️ 設定</Link>からデータ取得・予想生成を実行してください。
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main>
@@ -110,7 +157,7 @@ export default function RaceDetail() {
             {race.grade && <span className="meta-badge grade">{race.grade}</span>}
             <span className="meta-badge">{race.surface}{race.distance}m</span>
             <span className="meta-badge">{race.condition}</span>
-            <span className="meta-badge">発走 {race.postTime}</span>
+            {race.postTime && <span className="meta-badge">発走 {race.postTime}</span>}
             <span className="meta-badge">全{race.allHorses.length}頭</span>
           </div>
         </div>
@@ -124,14 +171,16 @@ export default function RaceDetail() {
       </div>
 
       {/* Check Card */}
-      <div className="check-card">
-        <h3>📊 コースデータチェックカード（過去10年）</h3>
-        <ul>
-          {race.checkCard.tips.map((tip, i) => (
-            <li key={i}>{tip}</li>
-          ))}
-        </ul>
-      </div>
+      {race.checkCard?.tips && race.checkCard.tips.length > 0 && (
+        <div className="check-card">
+          <h3>📊 コースデータチェックカード（過去10年）</h3>
+          <ul>
+            {race.checkCard.tips.map((tip, i) => (
+              <li key={i}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Pivot Horse Card */}
       <div className="pivot-card">
@@ -140,32 +189,38 @@ export default function RaceDetail() {
           {race.pivotHorse.num}番 {race.pivotHorse.name}
         </div>
         <div className="horse-details">
-          父{race.pivotHorse.sire} / {race.pivotHorse.jockey} / {race.pivotHorse.trainer}厩舎
+          {race.pivotHorse.sire && `父${race.pivotHorse.sire} / `}
+          {race.pivotHorse.jockey}
+          {race.pivotHorse.trainer && ` / ${race.pivotHorse.trainer}厩舎`}
         </div>
         <div className="score-display">
           <span className="score-number">{race.pivotHorse.expectationScore}</span>
           <span className="score-label">/ 100 期待値スコア</span>
         </div>
-        <div className="pivot-reasons">
-          {race.pivotHorse.reasons.map((r, i) => (
-            <span key={i} className={`reason-tag ${r.points > 0 ? "positive" : r.points < 0 ? "negative" : ""}`}>
-              {r.label} (+{r.points}pt) {r.dataSource}
-            </span>
-          ))}
-        </div>
+        {race.pivotHorse.reasons && race.pivotHorse.reasons.length > 0 && (
+          <div className="pivot-reasons">
+            {race.pivotHorse.reasons.map((r, i) => (
+              <span key={i} className={`reason-tag ${r.points > 0 ? "positive" : r.points < 0 ? "negative" : ""}`}>
+                {r.label} ({r.points >= 0 ? '+' : ''}{r.points}pt) {r.dataSource}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Bet Recommendations */}
-      <div className="bet-section">
-        <h3>💡 おすすめ買い目</h3>
-        {race.recommendations.map((bet, i) => (
-          <div key={i} className="bet-item">
-            <span className={`bet-type ${bet.type}`}>{bet.label}</span>
-            <span className="bet-combo">{bet.combination.join(" - ")}</span>
-            <span className="bet-reason">{bet.reason}</span>
-          </div>
-        ))}
-      </div>
+      {race.recommendations && race.recommendations.length > 0 && (
+        <div className="bet-section">
+          <h3>💡 おすすめ買い目</h3>
+          {race.recommendations.map((bet, i) => (
+            <div key={i} className="bet-item">
+              <span className={`bet-type ${bet.type}`}>{bet.label}</span>
+              <span className="bet-combo">{bet.combination.join(" - ")}</span>
+              <span className="bet-reason">{bet.reason}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* All Horses Table */}
       <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 16 }}>📋 全馬スコアリング</h3>
@@ -185,7 +240,7 @@ export default function RaceDetail() {
           </tr>
         </thead>
         <tbody>
-          {race.allHorses.map((horse: any) => (
+          {race.allHorses.map((horse) => (
             <tr key={horse.num} style={horse.num === race.pivotHorse.num ? { background: "rgba(251, 191, 36, 0.05)" } : {}}>
               <td><span className={`waku-badge waku-${horse.frame}`}>{horse.frame}</span></td>
               <td style={{ fontWeight: 700 }}>{horse.num}</td>
@@ -196,8 +251,10 @@ export default function RaceDetail() {
               <td style={{ color: "var(--text-muted)" }}>{horse.sex}</td>
               <td>{horse.jockey}</td>
               <td style={{ color: "var(--text-muted)" }}>{horse.trainer}</td>
-              <td style={{ color: "var(--text-secondary)" }}>{horse.sire}</td>
-              <td style={{ fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>{horse.odds}</td>
+              <td style={{ color: "var(--text-secondary)" }}>{horse.sire || '—'}</td>
+              <td style={{ fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
+                {horse.odds ? horse.odds.toFixed(1) : '—'}
+              </td>
               <td><strong>{horse.score}pt</strong></td>
               <td>
                 <span className={`pivot-score ${getScoreClass(horse.expectationScore)}`}>
@@ -223,25 +280,21 @@ export default function RaceDetail() {
             whiteSpace: "pre-wrap",
             color: "var(--text-primary)",
           }}>
-{`【${race.venue} ${race.raceNumber}R ${race.raceName}】🏆
-${race.surface}${race.distance}m ${race.condition} | 発走 ${race.postTime}
+{`【${race.venue} ${race.raceNumber}R ${race.raceName}】${race.isGraded ? '🏆' : ''}
+${race.surface}${race.distance}m ${race.condition}${race.postTime ? ` | 発走 ${race.postTime}` : ''}
 
-自信度: ★★★★☆
+自信度: ${'★'.repeat(Math.min(5, Math.max(1, Math.floor(race.expectationLevel / 20))))}
 
 ◎ ${race.pivotHorse.num} ${race.pivotHorse.name}
-父${race.pivotHorse.sire} / ${race.pivotHorse.jockey}
-${race.pivotHorse.reasons.map(r => `・${r.label} ${r.dataSource}`).join('\n')}
+${race.pivotHorse.sire ? `父${race.pivotHorse.sire}` : ''}${race.pivotHorse.jockey ? ` / ${race.pivotHorse.jockey}` : ''}
+${(race.pivotHorse.reasons || []).map(r => `・${r.label} ${r.dataSource}`).join('\n')}
 
-💡 推奨馬券
-ワイド ${race.recommendations[0]?.combination.join('-')}
-馬連 ${race.recommendations[1]?.combination.join('-')}
-
-この予想に乗る人は「いいね」で教えてください！
+${race.recommendations[0] ? `💡 推奨買い目\nワイド ${race.recommendations[0].combination.join('-')}` : ''}
+${race.recommendations[1] ? `馬連 ${race.recommendations[1].combination.join('-')}` : ''}
 
 #競馬予想 #${race.raceName} #データ分析`}
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button className="btn btn-primary">🐦 Xに投稿</button>
             <button className="btn btn-secondary" onClick={() => setShowPostPreview(false)}>閉じる</button>
           </div>
         </div>
