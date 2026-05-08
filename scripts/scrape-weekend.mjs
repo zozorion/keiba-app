@@ -436,23 +436,35 @@ async function scrapeResult(raceId) {
 
 /**
  * netkeibaのレース一覧から開催会場・レースIDを自動検出
+ *
+ * race.netkeiba.com の race_list_sub.html を使用：
+ * - 過去/未来どちらの開催日でも12桁race_idを返す（db.netkeiba.com/race/list/ は過去のみ）
+ * - JRA10場のみ（地方競馬は含まれない）
  */
 async function autoDetectVenues(date) {
-  const url = `https://db.netkeiba.com/race/list/${date.replace(/-/g, '')}/`;
+  const yyyymmdd = date.replace(/-/g, '');
+  const url = `https://race.netkeiba.com/top/race_list_sub.html?kaisai_date=${yyyymmdd}`;
   console.log(`  🔍 開催情報を自動検出中: ${url}`);
-  
+
   try {
     const html = await fetchUrl(url);
-    const $ = cheerio.load(html);
-    
-    // レースIDのリンクを収集
+
+    // race_id=XXXXXXXXXXXX (12桁) を全件抽出
     const raceIds = new Set();
-    $('a[href*="/race/"]').each((_, el) => {
-      const href = $(el).attr('href') || '';
-      const match = href.match(/\/race\/(\d{12})\//);
-      if (match) raceIds.add(match[1]);
-    });
-    
+    const re = /race_id=(\d{12})/g;
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      raceIds.add(m[1]);
+    }
+
+    // フォールバック: クエリ形式で見つからなければ素の12桁数字も拾う
+    if (raceIds.size === 0) {
+      const re2 = /\b(\d{12})\b/g;
+      while ((m = re2.exec(html)) !== null) {
+        raceIds.add(m[1]);
+      }
+    }
+
     if (raceIds.size === 0) {
       console.log('  ⚠️ レースが見つかりませんでした');
       return null;
