@@ -144,7 +144,7 @@ function tryParseJSON(text: string): LLMRaceAnalysis | null {
  */
 export async function enhancePredictionWithLLM(
   prediction: PredictionResult
-): Promise<PredictionResult & { llmEnhanced?: boolean; llmAdvice?: string }> {
+): Promise<PredictionResult & { llmEnhanced?: boolean; llmAdvice?: string; llmMode?: 'commentary' | 'primary' }> {
   if (!isGeminiConfigured()) return prediction;
 
   const prompt = buildPrompt(prediction);
@@ -177,34 +177,47 @@ export async function enhancePredictionWithLLM(
   const evalMap = new Map<number, LLMHorseEval>();
   for (const e of analysis.horse_evaluations) evalMap.set(e.num, e);
 
-  // 軸馬の詳細理由（pivot_reasons）
+  // ヒューリスティックの分散を計測。十分なバラつきがあれば「過去データありモード」と判定し
+  // 数値はヒューリスティック優先、Geminiはコメント役のみに留める。
+  // 分散が小さい（≒過去データ未接続でほぼ全員ベース50付近）なら Gemini を主担当に切り替え。
+  const heurScores = prediction.scoredHorses.map(h => h.score);
+  const heurMax = Math.max(...heurScores);
+  const heurMin = Math.min(...heurScores);
+  const heurRange = heurMax - heurMin;
+  const heuristicHasRealData = heurRange >= 12;  // 12pt以上のレンジがあれば過去データが効いていると判定
+
+  // 軸馬の詳細理由
   const pivotKeyReasons: ScoreReason[] = analysis.key_reasons.map(reason => ({
     category: 'class' as const,
     label: reason,
-    // 軸馬の最終信頼度から50を引いた値を理由数で按分
-    points: Math.max(1, Math.round((analysis.confidence - 50) / Math.max(1, analysis.key_reasons.length))),
-    dataSource: '🤖 Gemini分析',
+    // ヒューリスティック優先モードでは「コメント」扱いなのでpts=0
+    points: heuristicHasRealData
+      ? 0
+      : Math.max(1, Math.round((analysis.confidence - 50) / Math.max(1, analysis.key_reasons.length))),
+    dataSource: heuristicHasRealData ? '🤖 Gemini分析(コメント)' : '🤖 Gemini分析',
   }));
 
-  // 各馬を更新（Geminiスコアでexpectationを上書き、短評をreasonとして追加）
+  // 各馬を更新
   const updatedHorses: ScoredHorse[] = prediction.scoredHorses.map(h => {
     const ev = evalMap.get(h.num);
-    if (!ev) return h; // Gemini評価が無い馬はヒューリスティックのまま
+    if (!ev) return h;
 
     const isPivot = h.num === pivot.num;
     const noteReason: ScoreReason = {
       category: 'class' as const,
       label: ev.note || `Gemini信頼度${ev.score}`,
-      points: ev.score - 50,  // ベース50からの差分
-      dataSource: '🤖 Gemini分析',
+      // ヒューリスティック優先モードでは数値に影響させない
+      points: heuristicHasRealData ? 0 : (ev.score - 50),
+      dataSource: heuristicHasRealData ? '🤖 Gemini分析(コメント)' : '🤖 Gemini分析',
     };
 
     return {
       ...h,
-      expectationScore: ev.score,
+      // 過去データありなら expectationScore は触らない（事実ベース尊重）
+      expectationScore: heuristicHasRealData ? h.expectationScore : ev.score,
       reasons: isPivot
-        ? [...pivotKeyReasons, noteReason, ...h.reasons]   // 軸: 詳細理由 + 短評 + ヒューリスティック
-        : [noteReason, ...h.reasons],                       // 他: 短評 + ヒューリスティック
+        ? [...pivotKeyReasons, noteReason, ...h.reasons]
+        : [noteReason, ...h.reasons],
     };
   });
 
@@ -273,6 +286,24 @@ export async function enhancePredictionWithLLM(
     ],
   };
 
+  // ヒューリスティック優先モード: pivotとexpectationLevelはヒューリスティックの判断を尊重
+  // （ただし軸馬の reasons には Gemini の見解を追記してある）
+  if (heuristicHasRealData) {
+    return {
+      ...prediction,
+      scoredHorses: updatedHorses,
+      pivotHorse: prediction.pivotHorse,
+      expectationLevel: prediction.expectationLevel,
+      recommendations: prediction.recommendations, // ヒューリスティック由来の買い目を維持
+      checkCard: enhancedCheckCard,
+      isHighConfidence: prediction.isHighConfidence,
+      llmEnhanced: true,
+      llmAdvice: analysis.betting_advice,
+      llmMode: 'commentary' as const,
+    };
+  }
+
+  // LLM主担当モード（過去データ未接続時）: Geminiの判断を採用
   return {
     ...prediction,
     scoredHorses: updatedHorses,
@@ -283,6 +314,7 @@ export async function enhancePredictionWithLLM(
     isHighConfidence: analysis.confidence >= 70,
     llmEnhanced: true,
     llmAdvice: analysis.betting_advice,
+    llmMode: 'primary' as const,
   };
 }
 

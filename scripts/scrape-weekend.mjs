@@ -122,7 +122,7 @@ async function loginNetkeiba() {
   });
 }
 
-function fetchUrl(url, encoding = 'euc-jp') {
+function fetchUrl(url, encoding = 'euc-jp', extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
     const parsedUrl = new URL(url);
@@ -133,6 +133,7 @@ function fetchUrl(url, encoding = 'euc-jp') {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml',
         'Accept-Language': 'ja,en;q=0.9',
+        ...extraHeaders,
       }
     };
     // ログイン済みならcookieを付与
@@ -146,7 +147,7 @@ function fetchUrl(url, encoding = 'euc-jp') {
         const redirectUrl = res.headers.location.startsWith('http')
           ? res.headers.location
           : `https://${parsedUrl.hostname}${res.headers.location}`;
-        return fetchUrl(redirectUrl, encoding).then(resolve).catch(reject);
+        return fetchUrl(redirectUrl, encoding, extraHeaders).then(resolve).catch(reject);
       }
 
       const chunks = [];
@@ -282,6 +283,9 @@ async function scrapeShutuba(raceId) {
     const courseName = venueNames[venueCode] || '不明';
     const raceNumber = parseInt(raceId.substring(10, 12)) || 0;
 
+    // オッズと人気を netkeiba JSON API から取得（投票受付前は空が返るので欠損を許容）
+    await fetchAndAttachOdds(raceId, entries);
+
     return {
       raceId, raceName, raceData: raceData1, surface, distance, condition,
       weather, courseName, courseCode: venueCode, raceNumber, postTime,
@@ -291,6 +295,38 @@ async function scrapeShutuba(raceId) {
     console.error(`  ERROR scraping ${raceId}:`, e.message);
     return null;
   }
+}
+
+/**
+ * netkeiba単勝オッズAPI から馬番別オッズ・人気を取得して entries に注入。
+ * - 投票受付前は status:middle / data:"" が返る → 静かに諦める（捏造しない）
+ * - 投票受付後（通常レース前日夕〜当日朝）は実オッズが返る
+ *
+ * APIスキーマ:
+ *   { status, data: { odds: { "1": { "01": ["オッズ", "?", "人気"], ... } } } }
+ */
+async function fetchAndAttachOdds(raceId, entries) {
+  const url = `https://race.netkeiba.com/api/api_get_jra_odds.html?race_id=${raceId}&type=1`;
+  try {
+    const text = await fetchUrl(url, 'utf-8', {
+      'Referer': `https://race.netkeiba.com/race/shutuba.html?race_id=${raceId}`,
+      'Accept': 'application/json,text/javascript,*/*;q=0.01',
+      'X-Requested-With': 'XMLHttpRequest',
+    });
+    const json = JSON.parse(text);
+    if (!json || json.status !== 'result' || !json.data?.odds?.['1']) return;
+    const oddsData = json.data.odds['1'];
+    for (const e of entries) {
+      const key = String(e.num).padStart(2, '0');
+      const tuple = oddsData[key];
+      if (Array.isArray(tuple) && tuple.length >= 3) {
+        const odds = parseFloat(tuple[0]);
+        const pop = parseInt(tuple[2]);
+        if (Number.isFinite(odds) && odds > 0) e.odds = odds;
+        if (Number.isFinite(pop) && pop > 0) e.popularity = pop;
+      }
+    }
+  } catch { /* 投票前 or ネットワークエラー → 欠損のまま（捏造しない） */ }
 }
 
 /**
