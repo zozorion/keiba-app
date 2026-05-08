@@ -1,43 +1,103 @@
 /**
  * 予想API Route
- * GET /api/predict?date=2026-05-09
- * 指定日付の全レース予想を生成して返す
+ * GET /api/predict?date=2026-05-09           → キャッシュがあれば返す、無ければ生成
+ * GET /api/predict?date=2026-05-09&force=1   → 強制再生成（LLM再分析）
+ *
+ * 流れ:
+ *  1. data/weekly/<date>/entries.json を読む
+ *  2. ヒューリスティックscoringで全馬の基礎スコアを算出
+ *  3. Gemini Pro で各レースを総合分析し、軸馬・信頼度・買い目を上書き（並列4本）
+ *  4. predictions.json にキャッシュ保存
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { predictAllRaces, dateToInt } from '../../../engine/predictor';
+import { enhancePredictionsParallel } from '../../../lib/predict-llm';
+import { isGeminiConfigured } from '../../../lib/gemini';
 import type { RaceInfo, PredictionResult } from '../../../engine/types';
+
+// LLM強化結果のキャッシュ有効期間（24時間）
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+export const maxDuration = 300; // Vercel/Railway のサーバーレス上限を300秒に拡張（LLM強化は分単位）
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const date = searchParams.get('date');
+  const force = searchParams.get('force') === '1';
 
   if (!date) {
     return NextResponse.json({ error: 'date parameter required (YYYY-MM-DD)' }, { status: 400 });
   }
 
   try {
-    // 週間データがあるか確認
     const weeklyDir = path.join(process.cwd(), 'data', 'weekly', date);
     const entriesPath = path.join(weeklyDir, 'entries.json');
+    const cachePath = path.join(weeklyDir, 'predictions.json');
 
     if (!fs.existsSync(entriesPath)) {
       return NextResponse.json({
         error: `${date}のレースデータが見つかりません。先にデータを取得してください。`,
-        needsScrape: true
+        needsScrape: true,
       }, { status: 404 });
     }
 
+    // === キャッシュ判定 ===
+    if (!force && fs.existsSync(cachePath)) {
+      try {
+        const cached = JSON.parse(fs.readFileSync(cachePath, 'utf-8'));
+        const generatedAt = cached.generatedAt ? new Date(cached.generatedAt).getTime() : 0;
+        const age = Date.now() - generatedAt;
+        if (cached.predictions && age < CACHE_TTL_MS) {
+          // キャッシュをvenuesグルーピング形式で返す
+          const byVenue: Record<string, any[]> = {};
+          for (const p of cached.predictions) {
+            const v = p.venue || p.race?.courseName || '不明';
+            if (!byVenue[v]) byVenue[v] = [];
+            // フロント期待形式に整形（race フィールドを再構築）
+            byVenue[v].push({
+              race: {
+                raceId: p.raceId,
+                raceName: p.raceName,
+                courseName: p.venue,
+                raceNumber: p.raceNumber,
+                surface: p.surface,
+                distance: p.distance,
+                condition: p.condition,
+                postTime: p.postTime,
+                grade: p.grade,
+              },
+              pivotHorse: p.pivotHorse,
+              expectationLevel: p.expectationLevel,
+              isGraded: p.isGraded,
+              isHighConfidence: p.isHighConfidence,
+              shouldBet: p.shouldBet,
+              llmEnhanced: p.llmEnhanced,
+            });
+          }
+          return NextResponse.json({
+            date,
+            generatedAt: cached.generatedAt,
+            venueCount: Object.keys(byVenue).length,
+            raceCount: cached.predictions.length,
+            venues: byVenue,
+            cached: true,
+            llmEnhanced: cached.llmEnhanced,
+          });
+        }
+      } catch { /* キャッシュ破損 → 再生成 */ }
+    }
+
+    // === 新規生成 ===
     const entriesData = JSON.parse(fs.readFileSync(entriesPath, 'utf-8'));
     const races: RaceInfo[] = entriesData.races || [];
-
     if (races.length === 0) {
       return NextResponse.json({ error: 'レースデータが空です' }, { status: 404 });
     }
 
-    // v5.4: results.jsonからオッズを注入（entries.jsonにオッズがない場合のフォールバック）
+    // results.jsonからオッズを注入
     const resultsPath = path.join(weeklyDir, 'results.json');
     if (fs.existsSync(resultsPath)) {
       try {
@@ -50,7 +110,6 @@ export async function GET(request: NextRequest) {
             }
           }
         }
-        // entries にオッズ注入
         for (const race of races) {
           for (const entry of race.entries) {
             if (!entry.odds) {
@@ -67,9 +126,18 @@ export async function GET(request: NextRequest) {
     }
 
     const raceDate = dateToInt(date);
-    const predictions = predictAllRaces(races, raceDate);
+    const heuristicPreds = predictAllRaces(races, raceDate);
 
-    // 会場別にグルーピング
+    // === LLM強化（並列） ===
+    const llmReady = isGeminiConfigured();
+    const startedAt = Date.now();
+    const predictions = llmReady
+      ? await enhancePredictionsParallel(heuristicPreds, 4)
+      : heuristicPreds;
+    const llmDurationMs = llmReady ? Date.now() - startedAt : 0;
+    const llmSuccessCount = predictions.filter(p => (p as any).llmEnhanced).length;
+
+    // 会場別グルーピング
     const byVenue: Record<string, PredictionResult[]> = {};
     for (const pred of predictions) {
       const venue = pred.race.courseName;
@@ -77,11 +145,16 @@ export async function GET(request: NextRequest) {
       byVenue[venue].push(pred);
     }
 
-    // 結果をキャッシュ保存
-    const resultPath = path.join(weeklyDir, 'predictions.json');
-    fs.writeFileSync(resultPath, JSON.stringify({
+    // キャッシュ保存
+    fs.writeFileSync(cachePath, JSON.stringify({
       date,
       generatedAt: new Date().toISOString(),
+      llmEnhanced: llmReady && llmSuccessCount > 0,
+      llmStats: {
+        attempted: llmReady ? predictions.length : 0,
+        succeeded: llmSuccessCount,
+        durationMs: llmDurationMs,
+      },
       predictions: predictions.map(p => ({
         raceId: p.race.raceId,
         raceName: p.race.raceName,
@@ -99,6 +172,7 @@ export async function GET(request: NextRequest) {
           expectationScore: p.pivotHorse.expectationScore,
           sire: p.pivotHorse.sire,
           jockey: p.pivotHorse.jockey,
+          trainer: p.pivotHorse.trainer,
           reasons: p.pivotHorse.reasons,
         },
         expectationLevel: p.expectationLevel,
@@ -106,32 +180,21 @@ export async function GET(request: NextRequest) {
         isHighConfidence: p.isHighConfidence,
         shouldBet: (p as any).shouldBet ?? true,
         skipReasons: (p as any).skipReasons || [],
+        llmEnhanced: !!(p as any).llmEnhanced,
+        llmAdvice: (p as any).llmAdvice,
         recommendations: p.recommendations,
         checkCard: p.checkCard,
         allHorses: p.scoredHorses.map(h => ({
-          num: h.num,
-          frame: h.frame,
-          name: h.name,
-          sex: h.sex,
-          jockey: h.jockey,
-          trainer: h.trainer,
-          sire: h.sire,
-          score: h.score,
-          expectationScore: h.expectationScore,
+          num: h.num, frame: h.frame, name: h.name, sex: h.sex,
+          jockey: h.jockey, trainer: h.trainer, sire: h.sire,
+          score: h.score, expectationScore: h.expectationScore,
           reasons: h.reasons,
-          odds: h.odds,
-          popularity: h.popularity,
-          distanceRecord: h.distanceRecord,
-          courseRecord: h.courseRecord,
-          surfaceRecord: h.surfaceRecord,
-          intervalDays: h.intervalDays,
+          odds: (h as any).odds, popularity: (h as any).popularity,
+          distanceRecord: h.distanceRecord, courseRecord: h.courseRecord,
+          surfaceRecord: h.surfaceRecord, intervalDays: h.intervalDays,
           recentHistory: h.history?.slice(0, 3).map(hr => ({
-            date: hr.date,
-            course: hr.courseName,
-            surface: hr.surface,
-            distance: hr.distance,
-            finish: hr.finish,
-            last3f: hr.last3f,
+            date: hr.date, course: hr.courseName, surface: hr.surface,
+            distance: hr.distance, finish: hr.finish, last3f: hr.last3f,
             condition: hr.condition,
           })),
         })),
@@ -144,11 +207,13 @@ export async function GET(request: NextRequest) {
       venueCount: Object.keys(byVenue).length,
       raceCount: predictions.length,
       venues: byVenue,
+      llmEnhanced: llmReady && llmSuccessCount > 0,
+      llmStats: { succeeded: llmSuccessCount, attempted: llmReady ? predictions.length : 0 },
     });
   } catch (error: any) {
     console.error('Prediction error:', error);
     return NextResponse.json({
-      error: `予想生成エラー: ${error.message}`
+      error: `予想生成エラー: ${error.message}`,
     }, { status: 500 });
   }
 }
