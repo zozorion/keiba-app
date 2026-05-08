@@ -24,10 +24,17 @@ const SYSTEM_INSTRUCTION = `あなたはJRA中央競馬の専門家アナリス�
 
 回答は必ず指定されたJSONのみで、前後に説明文を一切含めない。`;
 
+interface LLMHorseEval {
+  num: number;
+  score: number;       // 0-100 信頼度
+  note: string;        // 短評
+}
+
 interface LLMRaceAnalysis {
   pivot_num: number;
   confidence: number;
   key_reasons: string[];
+  horse_evaluations: LLMHorseEval[];   // 全頭評価
   rivals: number[];
   danger_horses: number[];
   betting_advice: string;
@@ -64,20 +71,33 @@ ${heurTop3}
 （注: 上記スコアは騎手程度しか見ていない簡易計算。最終判断は総合分析で）
 
 【指示】
-このレースを総合分析し、最も「3着以内に来やすい」軸馬を1頭選んでください。
-- 軸の信頼度を 0〜100 で評価（80以上=高自信, 65以上=普通, 50未満=見送り推奨）
-- 軸選定の根拠を2〜4個の短い箇条書き（騎手の特徴・血統適性・コース実績・脚質適性など具体的に）
-- 「対抗馬」（軸とのワイドが本線になる相手）を2〜3頭
-- 「危険馬」（人気だが消し候補・信頼できない馬）があれば最大2頭
-- 買い目アドバイス1文（軸+相手の点数、推奨券種など）
+このレースを総合分析し、軸馬の選定 + 出走全頭への信頼度評価をしてください。
 
-JSONのみで返答（前後に何も書かない、コードブロック禁止）:
+■ 軸馬: 最も「3着以内に来やすい」1頭。信頼度0-100。理由は短い箇条書き2〜4個（騎手×厩舎相性、血統と距離・芝ダの適性、コース形態と脚質の合致、枠順バイアス、近走内容など具体的に）。
+
+■ 全頭評価: 出走全${r.entries.length}頭それぞれに 0-100 の信頼度を独立に振る（合計値ではない）。目安：
+  - 80-95 = ◎軸候補級
+  - 65-79 = ○対抗・上位
+  - 50-64 = △押さえ・中位
+  - 35-49 = ▲軽視
+  - 0-34  = ×消し
+各馬に20〜40字の短評（注目点 or 不安点）。
+
+■ 対抗馬: 軸とのワイドが本線になる2〜3頭の馬番
+■ 危険馬: 人気だが消し候補（信頼できない馬）最大2頭の馬番
+■ 買い目アドバイス: 軸+相手の点数・推奨券種を1文で
+
+JSONのみで返答（前後に説明文やコードブロック禁止）:
 {
-  "pivot_num": <馬番>,
-  "confidence": <0-100の整数>,
-  "key_reasons": ["短い理由1", "短い理由2", "..."],
-  "rivals": [<馬番>, <馬番>, ...],
-  "danger_horses": [<馬番>, ...],
+  "pivot_num": <軸馬番>,
+  "confidence": <0-100>,
+  "key_reasons": ["軸選定の根拠1", "..."],
+  "horse_evaluations": [
+    { "num": <馬番>, "score": <0-100>, "note": "<20〜40字の短評>" },
+    ... 全頭分（出走頭数と同じ件数を返す）
+  ],
+  "rivals": [<対抗馬番>, ...],
+  "danger_horses": [<危険馬番>, ...],
   "betting_advice": "<短評>"
 }`;
 }
@@ -95,10 +115,20 @@ function tryParseJSON(text: string): LLMRaceAnalysis | null {
   try {
     const parsed = JSON.parse(jsonStr);
     if (typeof parsed.pivot_num !== 'number' || typeof parsed.confidence !== 'number') return null;
+    const evals: LLMHorseEval[] = Array.isArray(parsed.horse_evaluations)
+      ? parsed.horse_evaluations
+          .filter((e: any) => typeof e?.num === 'number' && typeof e?.score === 'number')
+          .map((e: any) => ({
+            num: e.num,
+            score: Math.max(0, Math.min(100, Math.round(e.score))),
+            note: typeof e.note === 'string' ? e.note.trim() : '',
+          }))
+      : [];
     return {
       pivot_num: parsed.pivot_num,
       confidence: Math.max(0, Math.min(100, Math.round(parsed.confidence))),
       key_reasons: Array.isArray(parsed.key_reasons) ? parsed.key_reasons.map(String) : [],
+      horse_evaluations: evals,
       rivals: Array.isArray(parsed.rivals) ? parsed.rivals.filter((n: any) => typeof n === 'number') : [],
       danger_horses: Array.isArray(parsed.danger_horses) ? parsed.danger_horses.filter((n: any) => typeof n === 'number') : [],
       betting_advice: typeof parsed.betting_advice === 'string' ? parsed.betting_advice : '',
@@ -114,7 +144,7 @@ function tryParseJSON(text: string): LLMRaceAnalysis | null {
  */
 export async function enhancePredictionWithLLM(
   prediction: PredictionResult
-): Promise<PredictionResult & { llmEnhanced?: boolean; llmAdvice?: string }> {
+): Promise<PredictionResult & { llmEnhanced?: boolean; llmAdvice?: string; llmMode?: 'commentary' | 'primary' }> {
   if (!isGeminiConfigured()) return prediction;
 
   const prompt = buildPrompt(prediction);
@@ -122,7 +152,7 @@ export async function enhancePredictionWithLLM(
     systemInstruction: SYSTEM_INSTRUCTION,
     userPrompt: prompt,
     temperature: 0.4,        // 競馬予測は再現性重視で低め
-    maxOutputTokens: 2048,
+    maxOutputTokens: 4096,   // 全頭評価を含むため拡大
   });
 
   if (!result.ok) {
@@ -143,28 +173,55 @@ export async function enhancePredictionWithLLM(
     return prediction;
   }
 
-  // 軸馬のスコア・理由をLLM結果で上書き
-  const llmReasons: ScoreReason[] = analysis.key_reasons.map(reason => ({
+  // 全頭評価をマップ化
+  const evalMap = new Map<number, LLMHorseEval>();
+  for (const e of analysis.horse_evaluations) evalMap.set(e.num, e);
+
+  // ヒューリスティックの分散を計測。十分なバラつきがあれば「過去データありモード」と判定し
+  // 数値はヒューリスティック優先、Geminiはコメント役のみに留める。
+  // 分散が小さい（≒過去データ未接続でほぼ全員ベース50付近）なら Gemini を主担当に切り替え。
+  const heurScores = prediction.scoredHorses.map(h => h.score);
+  const heurMax = Math.max(...heurScores);
+  const heurMin = Math.min(...heurScores);
+  const heurRange = heurMax - heurMin;
+  const heuristicHasRealData = heurRange >= 12;  // 12pt以上のレンジがあれば過去データが効いていると判定
+
+  // 軸馬の詳細理由
+  const pivotKeyReasons: ScoreReason[] = analysis.key_reasons.map(reason => ({
     category: 'class' as const,
     label: reason,
-    points: 0,
-    dataSource: '🤖 Gemini分析',
+    // ヒューリスティック優先モードでは「コメント」扱いなのでpts=0
+    points: heuristicHasRealData
+      ? 0
+      : Math.max(1, Math.round((analysis.confidence - 50) / Math.max(1, analysis.key_reasons.length))),
+    dataSource: heuristicHasRealData ? '🤖 Gemini分析(コメント)' : '🤖 Gemini分析',
   }));
 
-  const enhancedPivot: ScoredHorse = {
-    ...pivot,
-    expectationScore: analysis.confidence,
-    reasons: [
-      // LLM理由を先頭に置く（UIで目立つ）
-      ...llmReasons,
-      ...pivot.reasons,
-    ],
-  };
+  // 各馬を更新
+  const updatedHorses: ScoredHorse[] = prediction.scoredHorses.map(h => {
+    const ev = evalMap.get(h.num);
+    if (!ev) return h;
 
-  // 全馬リストの中の軸馬も上書き
-  const updatedHorses = prediction.scoredHorses.map(h =>
-    h.num === pivot.num ? enhancedPivot : h
-  );
+    const isPivot = h.num === pivot.num;
+    const noteReason: ScoreReason = {
+      category: 'class' as const,
+      label: ev.note || `Gemini信頼度${ev.score}`,
+      // ヒューリスティック優先モードでは数値に影響させない
+      points: heuristicHasRealData ? 0 : (ev.score - 50),
+      dataSource: heuristicHasRealData ? '🤖 Gemini分析(コメント)' : '🤖 Gemini分析',
+    };
+
+    return {
+      ...h,
+      // 過去データありなら expectationScore は触らない（事実ベース尊重）
+      expectationScore: heuristicHasRealData ? h.expectationScore : ev.score,
+      reasons: isPivot
+        ? [...pivotKeyReasons, noteReason, ...h.reasons]
+        : [noteReason, ...h.reasons],
+    };
+  });
+
+  const enhancedPivot = updatedHorses.find(h => h.num === pivot.num) || pivot;
 
   // 買い目を LLM の対抗馬・危険馬を反映して再生成
   const rivals = analysis.rivals
@@ -229,6 +286,24 @@ export async function enhancePredictionWithLLM(
     ],
   };
 
+  // ヒューリスティック優先モード: pivotとexpectationLevelはヒューリスティックの判断を尊重
+  // （ただし軸馬の reasons には Gemini の見解を追記してある）
+  if (heuristicHasRealData) {
+    return {
+      ...prediction,
+      scoredHorses: updatedHorses,
+      pivotHorse: prediction.pivotHorse,
+      expectationLevel: prediction.expectationLevel,
+      recommendations: prediction.recommendations, // ヒューリスティック由来の買い目を維持
+      checkCard: enhancedCheckCard,
+      isHighConfidence: prediction.isHighConfidence,
+      llmEnhanced: true,
+      llmAdvice: analysis.betting_advice,
+      llmMode: 'commentary' as const,
+    };
+  }
+
+  // LLM主担当モード（過去データ未接続時）: Geminiの判断を採用
   return {
     ...prediction,
     scoredHorses: updatedHorses,
@@ -239,6 +314,7 @@ export async function enhancePredictionWithLLM(
     isHighConfidence: analysis.confidence >= 70,
     llmEnhanced: true,
     llmAdvice: analysis.betting_advice,
+    llmMode: 'primary' as const,
   };
 }
 

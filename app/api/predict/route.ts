@@ -182,6 +182,7 @@ export async function GET(request: NextRequest) {
         skipReasons: (p as any).skipReasons || [],
         llmEnhanced: !!(p as any).llmEnhanced,
         llmAdvice: (p as any).llmAdvice,
+        llmMode: (p as any).llmMode,  // 'commentary' (過去データあり) | 'primary' (LLMが主担当)
         recommendations: p.recommendations,
         checkCard: p.checkCard,
         allHorses: p.scoredHorses.map(h => ({
