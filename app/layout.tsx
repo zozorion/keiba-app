@@ -32,6 +32,7 @@ export default function RootLayout({
                 <a href="/" className="nav-link active">ダッシュボード</a>
                 <a href="/results" className="nav-link">📊 結果検証</a>
                 <a href="/posts" className="nav-link">📝 投稿作成</a>
+                <a href="/templates-community" className="nav-link">📚 構成テンプレ</a>
                 <a href="/queue" className="nav-link">📮 キュー</a>
                 <a href="/learning" className="nav-link">🧠 学習ログ</a>
                 <a href="/settings" className="nav-link">⚙️ 設定</a>

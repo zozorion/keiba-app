@@ -8,6 +8,7 @@
 import { generateWithGemini, isGeminiConfigured } from './gemini';
 import { buildPostContext, PostContext } from './post-context';
 import { PostType } from './post-types';
+import { pickCommunityTemplate, incrementUseCount, CommunityTemplate } from './community-templates';
 import type { PostConfig } from '../app/api/post-config/route';
 
 export interface GeneratePostInput {
@@ -16,6 +17,8 @@ export interface GeneratePostInput {
   config: PostConfig;
   /** ISO datetime。投稿予定時刻（プレビュー時は現在で良い） */
   scheduledAt?: string;
+  /** コミュニティテンプレ採用率(0.0-1.0)。省略時0.4。0でテンプレ非適用 */
+  communityTemplateUseRate?: number;
 }
 
 export interface GeneratePostOutput {
@@ -24,6 +27,8 @@ export interface GeneratePostOutput {
   /** 検証で見つかった欠落キー（参考用） */
   missingFacts?: string[];
   error?: string;
+  /** 今回使用されたコミュニティテンプレ（あれば） */
+  usedCommunityTemplate?: { id: string; name: string };
 }
 
 /**
@@ -42,7 +47,12 @@ export async function generatePost(input: GeneratePostInput): Promise<GeneratePo
 
   const ctx = buildPostContext({ scheduledAt, recentPostsLimit: 10 });
   const systemInstruction = buildSystemInstruction(config);
-  const userPrompt = buildUserPrompt(postType, facts, ctx);
+  // コミュニティテンプレを確率でピック（適合タグ・お気に入りで重み付け）
+  const communityTemplate = pickCommunityTemplate({
+    postTypeId: postType.id,
+    useRate: input.communityTemplateUseRate ?? 0.4,
+  });
+  const userPrompt = buildUserPrompt(postType, facts, ctx, communityTemplate);
 
   // 1回目
   let result = await generateWithGemini({
@@ -72,10 +82,16 @@ export async function generatePost(input: GeneratePostInput): Promise<GeneratePo
     }
   }
 
+  // 使ったテンプレの利用カウントを加算
+  if (communityTemplate) incrementUseCount(communityTemplate.id);
+
   return {
     text,
     usedLLM: true,
     missingFacts: missing.length > 0 ? missing : undefined,
+    usedCommunityTemplate: communityTemplate
+      ? { id: communityTemplate.id, name: communityTemplate.name }
+      : undefined,
   };
 }
 
@@ -116,13 +132,27 @@ function buildSystemInstruction(config: PostConfig): string {
   return lines.join('\n');
 }
 
-function buildUserPrompt(postType: PostType, facts: Record<string, string>, ctx: PostContext): string {
+function buildUserPrompt(
+  postType: PostType,
+  facts: Record<string, string>,
+  ctx: PostContext,
+  communityTemplate?: CommunityTemplate | null,
+): string {
   const lines: string[] = [];
 
   lines.push(`【今回書く投稿の種類】${postType.label}`);
   lines.push('');
   lines.push(postType.prompt);
   lines.push('');
+
+  // コミュニティテンプレを使う場合のみ「構成指示」を追加（内容は真似させない）
+  if (communityTemplate) {
+    lines.push(`【構成パターン指示（他人の良い投稿の骨組みを参考にする。内容ではなく構成だけ真似る）】`);
+    lines.push(`パターン名: ${communityTemplate.name}`);
+    lines.push(communityTemplate.structurePrompt);
+    lines.push('※ 上記はあくまで「型」の参考。固有名詞や事実は元投稿のものを引用せず、本投稿の必須情報を使うこと。');
+    lines.push('');
+  }
 
   // 必須事実
   if (postType.requiredFacts.length > 0) {

@@ -43,6 +43,7 @@ next-env.d.ts
 # データファイル（個人データ・ログを含む）
 data/posts-log.json
 data/post-queue.json
+data/community-templates.json
 data/raw/
 data/weekly/
 data/analyzed/
