@@ -635,7 +635,52 @@ export function scoreHorse(
     totalScore = 50 + Math.round(diff * distTrust);
   }
 
-  const expectationScore = Math.min(100, Math.max(0, Math.round((totalScore / 100) * 100)));
+  // === 期待値スコア（v6: 回収率ベース） ===
+  // 期待値 = 強さスコアとオッズの乖離を数値化
+  // 強い馬でも低オッズなら期待値は低い。弱めでも高オッズなら期待値は高い。
+  //
+  // 計算ロジック:
+  //   1. 強さスコア(totalScore)から「この馬の適正オッズ」を推定
+  //      score 80 → 適正オッズ 2.5倍、score 60 → 適正オッズ 8.0倍 など
+  //   2. 実オッズ / 適正オッズ = 乖離率（1.0超なら割安＝期待値あり）
+  //   3. expectationScore = 強さスコア × 乖離倍率（上限100）
+  //
+  // オッズ未取得時はフォールバック: expectationScore ≒ totalScore
+  let expectationScore: number;
+  const odds = (entry as any).odds;
+  if (odds && odds > 0) {
+    // 強さスコアから適正オッズを推定（指数関数）
+    // score=90 → 1.5倍、score=75 → 3.5倍、score=60 → 8.0倍、score=50 → 15倍、score=40 → 30倍
+    const clampedScore = Math.max(30, Math.min(95, totalScore));
+    const fairOdds = Math.exp((90 - clampedScore) * 0.065);  // ≈ e^((90-score)*0.065)
+    
+    // 乖離率: 実オッズ / 適正オッズ
+    // > 1.0 なら割安（期待値あり） = オッズが実力より高い
+    // < 1.0 なら割高（期待値なし） = オッズが実力より低い（過剰人気）
+    const valueRatio = odds / fairOdds;
+    
+    // 期待値スコア = 強さベース × 乖離倍率（上限キャップ付き）
+    // valueRatio 1.0 → そのまま、2.0 → 1.5倍ブースト、0.5 → 0.75倍ペナルティ
+    const boostFactor = 1.0 + (valueRatio - 1.0) * 0.5; // 乖離の50%を反映（急激な変動を抑制）
+    const clampedBoost = Math.max(0.5, Math.min(2.0, boostFactor));
+    expectationScore = Math.min(100, Math.max(0, Math.round(totalScore * clampedBoost)));
+    
+    // 期待値理由を追加
+    const valueLabel = valueRatio >= 1.5 ? '🔥割安(妙味大)' 
+      : valueRatio >= 1.1 ? '💰割安(妙味あり)'
+      : valueRatio >= 0.9 ? '→適正'
+      : valueRatio >= 0.7 ? '⚠️やや割高'
+      : '❌割高(過剰人気)';
+    allReasons.push({
+      category: 'class' as const,
+      label: `${valueLabel} [実${odds}倍 vs 適正${fairOdds.toFixed(1)}倍]`,
+      points: Math.round((valueRatio - 1.0) * 10),
+      dataSource: `乖離率${(valueRatio * 100).toFixed(0)}%`,
+    });
+  } else {
+    // オッズ未取得 → 強さスコアをそのまま使用（フォールバック）
+    expectationScore = Math.min(100, Math.max(0, totalScore));
+  }
 
   return {
     ...entry,

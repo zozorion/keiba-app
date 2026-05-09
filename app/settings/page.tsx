@@ -19,6 +19,8 @@ export default function SettingsPage() {
   const [learnMessage, setLearnMessage] = useState('');
   const [dataStatus, setDataStatus] = useState<DataStatus>({});
   const [activeTab, setActiveTab] = useState<'scrape' | 'learn'>('scrape');
+  const [oddsStatus, setOddsStatus] = useState<JobStatus>('idle');
+  const [oddsMessage, setOddsMessage] = useState('');
 
   // 今週末の日付を自動設定
   useEffect(() => {
@@ -233,6 +235,56 @@ export default function SettingsPage() {
               ✅ スクレイプ完了！ダッシュボードで予測を確認できます
             </div>
           )}
+
+          {/* オッズ再取得セクション */}
+          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(100,116,139,0.2)' }}>
+            <h3 style={{ fontSize: '1rem', color: '#f59e0b', marginBottom: '0.5rem' }}>📊 オッズ再取得（当日朝用）</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: '0.8rem', lineHeight: '1.6' }}>
+              レース当日の朝に実行してください。最新の単勝オッズを取得し、<br />
+              <strong style={{ color: '#f59e0b' }}>期待値スコア（強さ×オッズ乖離）</strong>を有効化します。
+              オッズなしでは回収率ベースの判断ができません。
+            </p>
+            <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={async () => {
+                  setOddsStatus('running');
+                  setOddsMessage('📊 オッズを取得中...');
+                  try {
+                    for (const d of [satDate, sunDate]) {
+                      const ds = dataStatus[d];
+                      if (!ds?.hasEntries) continue;
+                      const res = await fetch(`/api/refresh-odds?date=${d}`, { method: 'POST' });
+                      const data = await res.json();
+                      if (data.success) {
+                        setOddsMessage(prev => prev + `\n✅ ${d}: ${data.message}`);
+                      } else {
+                        setOddsMessage(prev => prev + `\n⚠️ ${d}: ${data.error}`);
+                      }
+                    }
+                    setOddsStatus('done');
+                    setOddsMessage(prev => prev + '\n\n🎯 期待値スコアが有効になりました！ダッシュボードで確認してください');
+                    fetchDataStatus();
+                  } catch (e: any) {
+                    setOddsStatus('error');
+                    setOddsMessage(`❌ ${e.message}`);
+                  }
+                }}
+                disabled={oddsStatus === 'running'}
+                style={btn(true, oddsStatus === 'running', '#f59e0b')}
+              >
+                {oddsStatus === 'running' ? '⏳ 取得中...' : '📊 オッズを取得する'}
+              </button>
+            </div>
+            {oddsMessage && (
+              <div style={{
+                marginTop: '0.8rem', background: '#0f172a', borderRadius: '8px', padding: '1rem',
+                fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: '1.8', whiteSpace: 'pre-wrap',
+                color: oddsStatus === 'error' ? '#ef4444' : '#94a3b8',
+              }}>
+                {oddsMessage}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -278,12 +330,13 @@ export default function SettingsPage() {
         <h2 style={{ fontSize: '1rem', color: '#60a5fa', marginBottom: '0.8rem' }}>💡 毎週の使い方</h2>
         <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: '2' }}>
           <div><span style={{ color: '#f59e0b', fontWeight: 700 }}>① 金曜夜</span> → この画面で「📥 土日まとめて取得」をクリック（出走表を取得）</div>
-          <div><span style={{ color: '#3b82f6', fontWeight: 700 }}>② 土曜朝</span> → <Link href="/" style={{ color: '#60a5fa', textDecoration: 'none' }}>ダッシュボード</Link>で予測を確認 → 馬券購入</div>
-          <div><span style={{ color: '#f59e0b', fontWeight: 700 }}>③ 土曜夕</span> → この画面で「土曜のみ」をクリック（結果を取得）</div>
-          <div><span style={{ color: '#3b82f6', fontWeight: 700 }}>④ 日曜朝</span> → ダッシュボードで予測を確認 → 馬券購入</div>
-          <div><span style={{ color: '#f59e0b', fontWeight: 700 }}>⑤ 日曜夕</span> → この画面で「日曜のみ」をクリック（結果を取得）</div>
-          <div><span style={{ color: '#8b5cf6', fontWeight: 700 }}>⑥ 月曜朝</span> → この画面で「🧠 学習を実行する」をクリック</div>
-          <div><span style={{ color: '#4ade80', fontWeight: 700 }}>⑦ 確認</span> → <Link href="/learning" style={{ color: '#60a5fa', textDecoration: 'none' }}>学習ログ</Link>で成績と学習結果を確認</div>
+          <div><span style={{ color: '#f59e0b', fontWeight: 700 }}>② 土曜朝</span> → この画面で「📊 オッズを取得する」をクリック（期待値スコア有効化）</div>
+          <div><span style={{ color: '#3b82f6', fontWeight: 700 }}>③ 土曜朝</span> → <Link href="/" style={{ color: '#60a5fa', textDecoration: 'none' }}>ダッシュボード</Link>で<strong style={{ color: '#f59e0b' }}>期待値スコア</strong>を確認 → 馬券購入</div>
+          <div><span style={{ color: '#f59e0b', fontWeight: 700 }}>④ 土曜夕</span> → この画面で「土曜のみ」をクリック（結果を取得）</div>
+          <div><span style={{ color: '#f59e0b', fontWeight: 700 }}>⑤ 日曜朝</span> → 「📊 オッズを取得する」→ ダッシュボードで期待値確認 → 馬券購入</div>
+          <div><span style={{ color: '#f59e0b', fontWeight: 700 }}>⑥ 日曜夕</span> → この画面で「日曜のみ」をクリック（結果を取得）</div>
+          <div><span style={{ color: '#8b5cf6', fontWeight: 700 }}>⑦ 月曜朝</span> → この画面で「🧠 学習を実行する」をクリック</div>
+          <div><span style={{ color: '#4ade80', fontWeight: 700 }}>⑧ 確認</span> → <Link href="/learning" style={{ color: '#60a5fa', textDecoration: 'none' }}>学習ログ</Link>で成績と学習結果を確認</div>
         </div>
       </div>
     </main>
