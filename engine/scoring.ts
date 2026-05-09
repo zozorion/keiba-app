@@ -635,51 +635,64 @@ export function scoreHorse(
     totalScore = 50 + Math.round(diff * distTrust);
   }
 
-  // === 期待値スコア（v6: 回収率ベース） ===
-  // 期待値 = 強さスコアとオッズの乖離を数値化
-  // 強い馬でも低オッズなら期待値は低い。弱めでも高オッズなら期待値は高い。
+  // === 期待値スコア（v7: 対数スケール・分散重視） ===
+  // 
+  // v6の問題: 線形ブースト(×2.0)でscore50以上の馬が全て100に張り付く
+  // v7の方針: 対数スケールのブーストで30〜95の範囲に分散させる
   //
   // 計算ロジック:
-  //   1. 強さスコア(totalScore)から「この馬の適正オッズ」を推定
-  //      score 80 → 適正オッズ 2.5倍、score 60 → 適正オッズ 8.0倍 など
-  //   2. 実オッズ / 適正オッズ = 乖離率（1.0超なら割安＝期待値あり）
-  //   3. expectationScore = 強さスコア × 乖離倍率（上限100）
+  //   1. score → 推定勝率（シグモイド関数）
+  //   2. 期待回収率 = 推定勝率 × オッズ
+  //   3. 期待値スコア = 回収率を0-100にマッピング
+  //      回収率 0.5 → 30点、1.0 → 60点、1.5 → 75点、2.0 → 85点、3.0 → 95点
   //
-  // オッズ未取得時はフォールバック: expectationScore ≒ totalScore
   let expectationScore: number;
   const odds = (entry as any).odds;
   if (odds && odds > 0) {
-    // 強さスコアから適正オッズを推定（指数関数）
-    // score=90 → 1.5倍、score=75 → 3.5倍、score=60 → 8.0倍、score=50 → 15倍、score=40 → 30倍
-    const clampedScore = Math.max(30, Math.min(95, totalScore));
-    const fairOdds = Math.exp((90 - clampedScore) * 0.065);  // ≈ e^((90-score)*0.065)
-    
-    // 乖離率: 実オッズ / 適正オッズ
-    // > 1.0 なら割安（期待値あり） = オッズが実力より高い
-    // < 1.0 なら割高（期待値なし） = オッズが実力より低い（過剰人気）
+    // 1. 強さスコアから推定勝率を算出（シグモイド関数）
+    // score=90 → 35%, score=80 → 20%, score=70 → 12%, score=60 → 7%
+    // score=50 → 4%, score=40 → 2%, score=30 → 1%
+    const clampedScore = Math.max(20, Math.min(95, totalScore));
+    const winProb = 1 / (1 + Math.exp(-(clampedScore - 65) * 0.08));
+
+    // 2. 適正オッズ = 1 / 推定勝率
+    const fairOdds = 1 / winProb;
+
+    // 3. 期待回収率 = 推定勝率 × 実オッズ
+    //    > 1.0 なら「買い」（回収率プラス）
+    //    < 1.0 なら「見送り」
+    const expectedReturn = winProb * odds;
+
+    // 4. 回収率を期待値スコア(0-100)にマッピング（対数スケール）
+    //    回収率 0.3 → 20, 0.5 → 35, 0.8 → 50, 1.0 → 60
+    //    回収率 1.2 → 68, 1.5 → 75, 2.0 → 82, 3.0 → 90, 5.0 → 97
+    if (expectedReturn <= 0) {
+      expectationScore = 0;
+    } else {
+      // 対数マッピング: score = 60 + 30 * log2(回収率)
+      // 回収率1.0 → 60, 回収率2.0 → 90, 回収率0.5 → 30
+      const logReturn = Math.log2(Math.max(0.01, expectedReturn));
+      expectationScore = Math.round(60 + logReturn * 30);
+    }
+    expectationScore = Math.min(99, Math.max(5, expectationScore));
+
+    // 5. 乖離率（表示用）
     const valueRatio = odds / fairOdds;
-    
-    // 期待値スコア = 強さベース × 乖離倍率（上限キャップ付き）
-    // valueRatio 1.0 → そのまま、2.0 → 1.5倍ブースト、0.5 → 0.75倍ペナルティ
-    const boostFactor = 1.0 + (valueRatio - 1.0) * 0.5; // 乖離の50%を反映（急激な変動を抑制）
-    const clampedBoost = Math.max(0.5, Math.min(2.0, boostFactor));
-    expectationScore = Math.min(100, Math.max(0, Math.round(totalScore * clampedBoost)));
-    
-    // 期待値理由を追加
-    const valueLabel = valueRatio >= 1.5 ? '🔥割安(妙味大)' 
-      : valueRatio >= 1.1 ? '💰割安(妙味あり)'
-      : valueRatio >= 0.9 ? '→適正'
-      : valueRatio >= 0.7 ? '⚠️やや割高'
-      : '❌割高(過剰人気)';
+    const valueLabel = expectedReturn >= 2.0 ? '🔥高期待値' 
+      : expectedReturn >= 1.3 ? '💰期待値あり'
+      : expectedReturn >= 1.0 ? '✅回収率プラス圏'
+      : expectedReturn >= 0.7 ? '→ボーダー'
+      : expectedReturn >= 0.5 ? '⚠️期待値低め'
+      : '❌回収見込みなし';
     allReasons.push({
       category: 'class' as const,
-      label: `${valueLabel} [実${odds}倍 vs 適正${fairOdds.toFixed(1)}倍]`,
-      points: Math.round((valueRatio - 1.0) * 10),
-      dataSource: `乖離率${(valueRatio * 100).toFixed(0)}%`,
+      label: `${valueLabel} [回収率${(expectedReturn * 100).toFixed(0)}% / 実${odds}倍 vs 適正${fairOdds.toFixed(1)}倍]`,
+      points: Math.round((expectedReturn - 1.0) * 15),
+      dataSource: `推定勝率${(winProb * 100).toFixed(1)}%`,
     });
   } else {
-    // オッズ未取得 → 強さスコアをそのまま使用（フォールバック）
-    expectationScore = Math.min(100, Math.max(0, totalScore));
+    // オッズ未取得 → 強さスコアの半分程度を仮置き（オッズなしの不確実性を表現）
+    expectationScore = Math.min(60, Math.max(10, Math.round(totalScore * 0.6)));
   }
 
   return {
