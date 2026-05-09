@@ -1,6 +1,9 @@
 /**
  * 競馬予想エンジン — データローダー
  * results.csv, races.csv, horses_sire.csv, 分析済JSONを読み込み
+ * 
+ * v2: 馬名→結果インデックス導入で getHorseHistory() を O(n) → O(1) に高速化
+ * 473K行のresultsを毎回フィルタしていたのを、起動時にMapで事前構築する。
  */
 
 import fs from 'fs';
@@ -19,6 +22,11 @@ const ANALYZED_DIR = path.join(DATA_DIR, 'analyzed');
 let resultsCache: any[] | null = null;
 let racesCache: any[] | null = null;
 let sireCache: Map<string, string> | null = null;
+
+// v2: 馬名→結果のインデックス（高速検索用）
+let horseResultsIndex: Map<string, any[]> | null = null;
+// v2: raceId→レース情報のインデックス
+let raceMapCache: Map<string, any> | null = null;
 
 /**
  * results.csv を読み込み（キャッシュ付き）
@@ -52,7 +60,32 @@ export function loadResults(): any[] {
   });
 
   console.log(`Loaded ${resultsCache!.length.toLocaleString()} results`);
+
+  // v2: 馬名インデックスを構築
+  buildHorseResultsIndex();
+
   return resultsCache!;
+}
+
+/**
+ * v2: 馬名→結果のインデックスを構築
+ * O(n)で一回走査し、Map<馬名, 結果配列> を作る。
+ * 以後の getHorseHistory() は O(1) ルックアップ。
+ */
+function buildHorseResultsIndex() {
+  if (!resultsCache) return;
+  horseResultsIndex = new Map();
+  for (const r of resultsCache) {
+    const name = r.horse_name;
+    if (!name) continue;
+    const existing = horseResultsIndex.get(name);
+    if (existing) {
+      existing.push(r);
+    } else {
+      horseResultsIndex.set(name, [r]);
+    }
+  }
+  console.log(`Built horse index: ${horseResultsIndex.size.toLocaleString()} horses`);
 }
 
 /**
@@ -83,7 +116,22 @@ export function loadRaces(): any[] {
   });
 
   console.log(`Loaded ${racesCache!.length.toLocaleString()} races`);
+
+  // v2: raceMapキャッシュも構築
+  buildRaceMapCache();
+
   return racesCache!;
+}
+
+/**
+ * v2: raceId→レース情報のMapを構築
+ */
+function buildRaceMapCache() {
+  if (!racesCache) return;
+  raceMapCache = new Map();
+  for (const race of racesCache) {
+    raceMapCache.set(race.race_id, race);
+  }
 }
 
 /**
@@ -142,7 +190,7 @@ export function loadAnalyzedData(
 }
 
 /**
- * 馬名から過去成績を取得
+ * 馬名から過去成績を取得（v2: インデックス参照で高速化）
  * データ事実のみを返す
  */
 export function getHorseHistory(
@@ -150,18 +198,16 @@ export function getHorseHistory(
   beforeDate: number = 99999999,
   maxRecent: number = 10
 ): PastRecord[] {
-  const results = loadResults();
-  const races = loadRaces();
+  // データロード（キャッシュ済みならnoop）
+  loadResults();
+  loadRaces();
 
-  // 馬名でフィルタ
-  const horseResults = results.filter((r: any) => r.horse_name === horseName);
-  if (horseResults.length === 0) return [];
+  // v2: インデックスから O(1) で取得
+  const horseResults = horseResultsIndex?.get(horseName);
+  if (!horseResults || horseResults.length === 0) return [];
 
-  // races情報をマージ
-  const raceMap = new Map<string, any>();
-  for (const race of races) {
-    raceMap.set(race.race_id, race);
-  }
+  // raceMapキャッシュを使用
+  const raceMap = raceMapCache || new Map();
 
   const records: PastRecord[] = [];
   for (const r of horseResults) {
@@ -230,4 +276,6 @@ export function clearCache(): void {
   resultsCache = null;
   racesCache = null;
   sireCache = null;
+  horseResultsIndex = null;
+  raceMapCache = null;
 }
