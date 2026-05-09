@@ -75,8 +75,11 @@ export default function Dashboard() {
     try {
       const res = await fetch(`/api/predict?date=${date}`);
       const json = await res.json();
-      if (json.error) {
-        setError(json.error);
+      if (!res.ok || json.error) {
+        setError(json.error || `予測エラー (HTTP ${res.status})`);
+        setData(null);
+      } else if (!json.venues || typeof json.venues !== 'object') {
+        setError('予測データの形式が不正です（venues が見つかりません）');
         setData(null);
       } else {
         const venues: Record<string, RacePrediction[]> = {};
